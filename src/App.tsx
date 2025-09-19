@@ -1,15 +1,17 @@
 import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Button } from '@/components/ui/button'
-import { Robot, ChartBar, Users, CloudArrowUp, List } from '@phosphor-icons/react'
+import { Robot, ChartBar, Users, CloudArrowUp, List, Package, Wallet, Shield } from '@phosphor-icons/react'
 import { Dashboard } from '@/components/Dashboard'
 import { BotManager } from '@/components/BotManager'
-import { Analytics } from '@/components/Analytics'
+import { ProductManager } from '@/components/ProductManager'
+import { PaymentCenter } from '@/components/PaymentCenter'
 import { AgentManager } from '@/components/AgentManager'
 import { DeploymentCenter } from '@/components/DeploymentCenter'
+import { SecurityCenter } from '@/components/SecurityCenter'
 import { cn } from '@/lib/utils'
 
-export type NavigationItem = 'dashboard' | 'bots' | 'analytics' | 'agents' | 'deploy'
+export type NavigationItem = 'dashboard' | 'bots' | 'products' | 'payments' | 'agents' | 'deploy' | 'security'
 
 function App() {
   const [currentView, setCurrentView] = useKV<NavigationItem>('current-view', 'dashboard')
@@ -18,9 +20,11 @@ function App() {
   const navigationItems = [
     { id: 'dashboard' as const, label: 'Dashboard', icon: ChartBar },
     { id: 'bots' as const, label: 'Bot Manager', icon: Robot },
-    { id: 'analytics' as const, label: 'Analytics', icon: ChartBar },
+    { id: 'products' as const, label: 'Products', icon: Package },
+    { id: 'payments' as const, label: 'Payments', icon: Wallet },
     { id: 'agents' as const, label: 'Agents', icon: Users },
     { id: 'deploy' as const, label: 'Deploy', icon: CloudArrowUp },
+    { id: 'security' as const, label: 'Security', icon: Shield },
   ]
 
   const renderCurrentView = () => {
@@ -29,12 +33,16 @@ function App() {
         return <Dashboard />
       case 'bots':
         return <BotManager />
-      case 'analytics':
-        return <Analytics />
+      case 'products':
+        return <ProductManager />
+      case 'payments':
+        return <PaymentCenter />
       case 'agents':
         return <AgentManager />
       case 'deploy':
         return <DeploymentCenter />
+      case 'security':
+        return <SecurityCenter />
       default:
         return <Dashboard />
     }
@@ -46,7 +54,7 @@ function App() {
       <div className="lg:hidden flex items-center justify-between p-4 border-b border-border bg-card">
         <div className="flex items-center gap-3">
           <Robot size={24} weight="bold" className="text-primary" />
-          <h1 className="text-xl font-bold text-foreground">Bot Manager</h1>
+          <h1 className="text-xl font-bold text-foreground">TeleBot Platform</h1>
         </div>
         <Button
           variant="ghost"
@@ -65,7 +73,7 @@ function App() {
         )}>
           <div className="flex items-center gap-3 p-6 border-b border-border">
             <Robot size={28} weight="bold" className="text-primary" />
-            <h1 className="text-xl font-bold text-foreground">Bot Manager</h1>
+            <h1 className="text-xl font-bold text-foreground">TeleBot Platform</h1>
           </div>
           
           <nav className="p-4 space-y-2">
