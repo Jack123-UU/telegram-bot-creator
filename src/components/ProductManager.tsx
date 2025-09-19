@@ -208,7 +208,7 @@ export function ProductManager() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalStock.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{(totalStock || 0).toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
               Items available for sale
             </p>
@@ -221,7 +221,7 @@ export function ProductManager() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalValue.toLocaleString()}</div>
+            <div className="text-2xl font-bold">${(totalValue || 0).toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
               Total retail value
             </p>

@@ -86,7 +86,7 @@ export function Dashboard() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{currentStats.totalOrders.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{(currentStats.totalOrders || 0).toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
               <span className="text-success">+12%</span> from last month
             </p>
@@ -99,7 +99,7 @@ export function Dashboard() {
             <TrendUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${currentStats.totalRevenue.toLocaleString()}</div>
+            <div className="text-2xl font-bold">${(currentStats.totalRevenue || 0).toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
               <span className="text-success">+8.2%</span> from last month
             </p>

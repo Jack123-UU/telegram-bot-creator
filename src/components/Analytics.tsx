@@ -91,7 +91,7 @@ export function Analytics() {
             <Chat size={16} className="text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{currentMetrics.totalInteractions.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{(currentMetrics.totalInteractions || 0).toLocaleString()}</div>
             <div className="flex items-center mt-1 text-xs text-success">
               <TrendUp size={12} className="mr-1" />
               +18% from last week
@@ -139,7 +139,7 @@ export function Analytics() {
             <Users size={16} className="text-warning" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{currentMetrics.activeUsers.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{(currentMetrics.activeUsers || 0).toLocaleString()}</div>
             <div className="flex items-center mt-1 text-xs text-success">
               <TrendUp size={12} className="mr-1" />
               +24% growth

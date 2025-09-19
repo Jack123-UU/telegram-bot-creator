@@ -310,7 +310,7 @@ export function AgentManager() {
                       </Badge>
                     </TableCell>
                     <TableCell>{agent.botsManaged}</TableCell>
-                    <TableCell>${agent.revenue.toLocaleString()}</TableCell>
+                    <TableCell>${(agent.revenue || 0).toLocaleString()}</TableCell>
                     <TableCell>{agent.region}</TableCell>
                     <TableCell>{agent.lastActive}</TableCell>
                     <TableCell>

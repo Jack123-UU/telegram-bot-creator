@@ -263,7 +263,7 @@ export function PaymentCenter() {
             <TrendUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${stats.totalAmount.toLocaleString()}</div>
+            <div className="text-2xl font-bold">${(stats.totalAmount || 0).toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
               Confirmed payments only
             </p>
