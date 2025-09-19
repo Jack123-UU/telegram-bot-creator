@@ -2,7 +2,7 @@ import { useKV } from '@github/spark/hooks'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import { ChartBar, Download, TrendUp, Users, Chat, Activity } from '@phosphor-icons/react'
+import { ChartBar, Download, TrendUp, Users, Chat, Lightning } from '@phosphor-icons/react'
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { useState } from 'react'
 
@@ -104,7 +104,7 @@ export function Analytics() {
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Avg Response Time
             </CardTitle>
-            <Activity size={16} className="text-accent" />
+            <Lightning size={16} className="text-accent" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{currentMetrics.avgResponseTime}ms</div>

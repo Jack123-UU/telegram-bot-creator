@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { 
-  Activity, 
+  Lightning, 
   TrendUp, 
   Users, 
   Package, 
@@ -58,7 +58,7 @@ export function Dashboard() {
       case 'agent': return <Users size={16} className="text-accent" />
       case 'security': return <Shield size={16} className="text-success" />
       case 'bot': return <Robot size={16} className="text-warning" />
-      default: return <Activity size={16} />
+      default: return <Lightning size={16} />
     }
   }
 
@@ -217,7 +217,7 @@ export function Dashboard() {
 
             <div className="flex items-center justify-between p-4 border rounded-lg">
               <div className="flex items-center gap-3">
-                <Activity className="h-5 w-5 text-success" />
+                <Lightning className="h-5 w-5 text-success" />
                 <div>
                   <p className="font-medium">API Services</p>
                   <p className="text-sm text-muted-foreground">Backend health</p>

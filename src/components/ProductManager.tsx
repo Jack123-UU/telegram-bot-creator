@@ -69,6 +69,18 @@ export function ProductManager() {
       stock: 156,
       status: 'validating',
       uploadedAt: '2024-01-16'
+    },
+    {
+      id: 'prod-004',
+      name: 'Mobile API Login Codes',
+      country: 'United States',
+      type: 'api-login',
+      price: 39.99,
+      cost: 20.00,
+      stock: 324,
+      status: 'active',
+      uploadedAt: '2024-01-17',
+      lastSold: '30 minutes ago'
     }
   ])
 
@@ -77,7 +89,7 @@ export function ProductManager() {
   const [selectedType, setSelectedType] = useState<string>('')
 
   const countries = ['United States', 'United Kingdom', 'Germany', 'France', 'Canada', 'Australia']
-  const types = ['phone', 'email', 'social', 'messaging', 'gaming']
+  const types = ['phone', 'email', 'social', 'messaging', 'gaming', 'api-login']
 
   const currentProducts = products || []
 
@@ -86,6 +98,18 @@ export function ProductManager() {
     if (selectedType && product.type !== selectedType) return false
     return true
   })
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'api-login': return 'API Login'
+      case 'phone': return 'Phone'
+      case 'email': return 'Email'
+      case 'social': return 'Social'
+      case 'messaging': return 'Messaging'
+      case 'gaming': return 'Gaming'
+      default: return type
+    }
+  }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -117,7 +141,7 @@ export function ProductManager() {
             <DialogHeader>
               <DialogTitle>Upload New Products</DialogTitle>
               <DialogDescription>
-                Upload tdata/session files or CSV with product information
+                Upload tdata/session files, API login endpoints, or CSV with product information
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -143,7 +167,7 @@ export function ProductManager() {
                     </SelectTrigger>
                     <SelectContent>
                       {types.map(type => (
-                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                        <SelectItem key={type} value={type}>{getTypeLabel(type)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -167,7 +191,10 @@ export function ProductManager() {
                     Drag and drop ZIP files here, or click to browse
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Supports: .zip, .csv, .xlsx (Max 100MB)
+                    Supports: .zip, .csv, .xlsx, .txt (API endpoints) (Max 100MB)
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    API Login format: https://domain.com/api/token/uuid/action
                   </p>
                   <Button variant="outline" className="mt-2">
                     Browse Files
@@ -273,7 +300,7 @@ export function ProductManager() {
               <SelectContent>
                 <SelectItem value="">All Types</SelectItem>
                 {types.map(type => (
-                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                  <SelectItem key={type} value={type}>{getTypeLabel(type)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -316,7 +343,7 @@ export function ProductManager() {
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>{product.country}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{product.type}</Badge>
+                    <Badge variant="outline">{getTypeLabel(product.type)}</Badge>
                   </TableCell>
                   <TableCell>${product.price}</TableCell>
                   <TableCell>
