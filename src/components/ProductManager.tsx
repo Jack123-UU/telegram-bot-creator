@@ -92,8 +92,8 @@ export function ProductManager() {
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false)
   const [isApiImportOpen, setIsApiImportOpen] = useState(false)
   const [isAutoInventoryOpen, setIsAutoInventoryOpen] = useState(false)
-  const [selectedCountry, setSelectedCountry] = useState<string>('')
-  const [selectedType, setSelectedType] = useState<string>('')
+  const [selectedCountry, setSelectedCountry] = useState<string>('all-countries')
+  const [selectedType, setSelectedType] = useState<string>('all-types')
 
   const countries = ['United States', 'United Kingdom', 'Germany', 'France', 'Canada', 'Australia']
   const types = ['phone', 'email', 'social', 'messaging', 'gaming', 'api-login']
@@ -101,8 +101,8 @@ export function ProductManager() {
   const currentProducts = products || []
 
   const filteredProducts = currentProducts.filter(product => {
-    if (selectedCountry && product.country !== selectedCountry) return false
-    if (selectedType && product.type !== selectedType) return false
+    if (selectedCountry && selectedCountry !== 'all-countries' && product.country !== selectedCountry) return false
+    if (selectedType && selectedType !== 'all-types' && product.type !== selectedType) return false
     return true
   })
 
@@ -341,7 +341,7 @@ export function ProductManager() {
                 <SelectValue placeholder="All Countries" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Countries</SelectItem>
+                <SelectItem value="all-countries">All Countries</SelectItem>
                 {countries.map(country => (
                   <SelectItem key={country} value={country}>{country}</SelectItem>
                 ))}
@@ -353,7 +353,7 @@ export function ProductManager() {
                 <SelectValue placeholder="All Types" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Types</SelectItem>
+                <SelectItem value="all-types">All Types</SelectItem>
                 {types.map(type => (
                   <SelectItem key={type} value={type}>{getTypeLabel(type)}</SelectItem>
                 ))}
@@ -361,8 +361,8 @@ export function ProductManager() {
             </Select>
 
             <Button variant="outline" onClick={() => {
-              setSelectedCountry('')
-              setSelectedType('')
+              setSelectedCountry('all-countries')
+              setSelectedType('all-types')
             }}>
               Clear Filters
             </Button>
