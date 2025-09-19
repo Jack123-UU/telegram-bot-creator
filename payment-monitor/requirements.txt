@@ -1,8 +1,6 @@
-# Payment Monitor Dependencies
-aiohttp==3.9.1
-redis[hiredis]==5.0.1
 tronpy==0.4.0
-requests==2.31.0
-
-# Shared dependencies
-asyncio-mqtt==0.16.1
+aiohttp==3.9.1
+structlog==23.2.0
+python-dotenv==1.0.0
+asyncpg==0.29.0
+redis==5.0.1

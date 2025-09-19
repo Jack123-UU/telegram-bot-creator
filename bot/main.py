@@ -1,574 +1,476 @@
-"""
-Telegram Bot for TeleBot Sales Platform
-Using aiogram framework with TRON payment integration
-"""
-
+import os
 import asyncio
 import logging
-import os
-from typing import Optional, List, Dict, Any
-from decimal import Decimal
-from datetime import datetime, timedelta
-
-from aiogram import Bot, Dispatcher, Router, F
-from aiogram.types import (
-    Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton,
-    ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
-)
-from aiogram.filters import Command, CommandStart
+import aiohttp
+from aiogram import Bot, Dispatcher, Router
+from aiogram.types import Message, BotCommand, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from aiogram.filters import Command, Text
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.redis import RedisStorage
-from aiogram.client.default import DefaultBotProperties
-from aiogram.enums import ParseMode
-import aiohttp
+from aiohttp import web
+from aiohttp.web import Application
 import redis.asyncio as redis
+import json
+from typing import Optional, Dict, Any
+import structlog
+from datetime import datetime
 
-from vault_client import VaultClient
-
-# Configure logging
+# Configure structured logging
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger()
 
-# Environment variables
-API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
-VAULT_ADDR = os.getenv("VAULT_ADDR", "http://localhost:8200")
-VAULT_TOKEN = os.getenv("VAULT_TOKEN", "dev-root-token")
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/1")
+# Bot configuration
+BOT_TOKEN = os.getenv("BOT_TOKEN", "")
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+BACKEND_API_URL = os.getenv("BACKEND_API_URL", "http://localhost:8000")
+INTERNAL_API_TOKEN = os.getenv("INTERNAL_API_TOKEN", "dev-internal-token")
 
-# Global variables
-bot: Optional[Bot] = None
-vault_client: Optional[VaultClient] = None
+# Initialize Redis storage for FSM
+redis_client = redis.from_url(REDIS_URL)
+storage = RedisStorage(redis_client)
 
-# FSM States
-class UserStates(StatesGroup):
-    main_menu = State()
-    browsing_products = State()
-    creating_order = State()
-    waiting_payment = State()
-    contact_support = State()
-
-# Multilingual support
-TEXTS = {
-    "en": {
-        "welcome": "🤖 Welcome to TeleBot Sales Platform!\n\nYour digital marketplace for premium accounts and services.",
-        "main_menu": "📋 Main Menu",
-        "products": "🛍️ Products",
-        "my_orders": "📦 My Orders", 
-        "balance": "💰 Balance",
-        "contact": "💬 Contact Support",
-        "language": "🌐 Language",
-        "user_info": "👤 User Information",
-        "back": "⬅️ Back",
-        "cancel": "❌ Cancel",
-        "loading": "⏳ Loading...",
-        "error": "❌ An error occurred. Please try again.",
-        "user_created": "✅ Account created successfully!",
-        "order_created": "✅ Order created! Please make payment to complete.",
-        "payment_address": "💳 Payment Address",
-        "payment_amount": "💰 Amount to Pay",
-        "payment_expires": "⏰ Payment expires in",
-        "payment_qr": "📱 Scan QR code to pay",
-        "minutes": "minutes",
-        "no_products": "📭 No products available in this category.",
-        "insufficient_stock": "❌ Insufficient stock available.",
-        "order_expired": "⏰ Order expired. Please create a new order.",
-        "payment_confirmed": "✅ Payment confirmed! Your order is being processed.",
-        "product_delivered": "📦 Product delivered! Check your files.",
-        "invalid_amount": "❌ Invalid amount. Please enter a valid number.",
-        "api_login": "🔐 API Login",
-        "session_files": "📁 Session Files"
-    },
-    "zh": {
-        "welcome": "🤖 欢迎来到 TeleBot 销售平台！\n\n您的优质账号和服务数字市场。",
-        "main_menu": "📋 主菜单",
-        "products": "🛍️ 商品",
-        "my_orders": "📦 我的订单",
-        "balance": "💰 余额",
-        "contact": "💬 联系客服",
-        "language": "🌐 语言",
-        "user_info": "👤 用户信息",
-        "back": "⬅️ 返回",
-        "cancel": "❌ 取消",
-        "loading": "⏳ 加载中...",
-        "error": "❌ 发生错误，请重试。",
-        "user_created": "✅ 账户创建成功！",
-        "order_created": "✅ 订单已创建！请付款完成购买。",
-        "payment_address": "💳 付款地址",
-        "payment_amount": "💰 付款金额",
-        "payment_expires": "⏰ 付款将在",
-        "payment_qr": "📱 扫描二维码付款",
-        "minutes": "分钟后过期",
-        "no_products": "📭 此分类暂无商品。",
-        "insufficient_stock": "❌ 库存不足。",
-        "order_expired": "⏰ 订单已过期，请创建新订单。",
-        "payment_confirmed": "✅ 付款已确认！正在处理您的订单。",
-        "product_delivered": "📦 商品已送达！请查看您的文件。",
-        "invalid_amount": "❌ 无效金额。请输入有效数字。",
-        "api_login": "🔐 API 登录",
-        "session_files": "📁 会话文件"
-    }
-}
-
-def get_text(lang: str, key: str) -> str:
-    """Get localized text"""
-    return TEXTS.get(lang, TEXTS["en"]).get(key, key)
-
-def create_main_keyboard(lang: str = "en") -> ReplyKeyboardMarkup:
-    """Create main menu keyboard"""
-    keyboard = [
-        [
-            KeyboardButton(text=get_text(lang, "products")),
-            KeyboardButton(text=get_text(lang, "my_orders"))
-        ],
-        [
-            KeyboardButton(text=get_text(lang, "balance")),
-            KeyboardButton(text=get_text(lang, "contact"))
-        ],
-        [
-            KeyboardButton(text=get_text(lang, "language")),
-            KeyboardButton(text=get_text(lang, "user_info"))
-        ]
-    ]
-    
-    return ReplyKeyboardMarkup(
-        keyboard=keyboard,
-        resize_keyboard=True,
-        one_time_keyboard=False
-    )
-
-def create_products_keyboard(lang: str = "en") -> InlineKeyboardMarkup:
-    """Create products category keyboard"""
-    keyboard = [
-        [
-            InlineKeyboardButton(
-                text=f"📁 {get_text(lang, 'session_files')}",
-                callback_data="category:session"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text=f"🔐 {get_text(lang, 'api_login')}",
-                callback_data="category:api"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text="🇺🇸 USA",
-                callback_data="country:US"
-            ),
-            InlineKeyboardButton(
-                text="🇬🇧 UK",
-                callback_data="country:GB"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text="🇨🇳 China",
-                callback_data="country:CN"
-            ),
-            InlineKeyboardButton(
-                text="🇷🇺 Russia",
-                callback_data="country:RU"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text=get_text(lang, "back"),
-                callback_data="back:main"
-            )
-        ]
-    ]
-    
-    return InlineKeyboardMarkup(inline_keyboard=keyboard)
-
-def create_language_keyboard() -> InlineKeyboardMarkup:
-    """Create language selection keyboard"""
-    keyboard = [
-        [
-            InlineKeyboardButton(
-                text="🇺🇸 English",
-                callback_data="lang:en"
-            ),
-            InlineKeyboardButton(
-                text="🇨🇳 中文",
-                callback_data="lang:zh"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text="⬅️ Back",
-                callback_data="back:main"
-            )
-        ]
-    ]
-    
-    return InlineKeyboardMarkup(inline_keyboard=keyboard)
-
-async def api_request(method: str, endpoint: str, data: Optional[Dict] = None) -> Optional[Dict]:
-    """Make API request to backend"""
-    try:
-        url = f"{API_BASE_URL}{endpoint}"
-        
-        async with aiohttp.ClientSession() as session:
-            async with session.request(method, url, json=data) as response:
-                if response.status == 200:
-                    return await response.json()
-                else:
-                    logger.error(f"API request failed: {response.status} - {await response.text()}")
-                    return None
-                    
-    except Exception as e:
-        logger.error(f"API request error: {e}")
-        return None
-
-async def get_user_language(user_id: int) -> str:
-    """Get user's preferred language"""
-    # In production, this would fetch from database
-    # For now, return default
-    return "en"
-
-async def create_or_get_user(message: Message) -> Optional[Dict]:
-    """Create or get user from backend"""
-    user_data = {
-        "tg_id": message.from_user.id,
-        "username": message.from_user.username,
-        "first_name": message.from_user.first_name,
-        "last_name": message.from_user.last_name,
-        "language_code": message.from_user.language_code or "en"
-    }
-    
-    return await api_request("POST", "/api/v1/users", user_data)
-
-async def get_products(category: Optional[str] = None, country: Optional[str] = None) -> List[Dict]:
-    """Get products from backend"""
-    params = []
-    if category:
-        params.append(f"category={category}")
-    if country:
-        params.append(f"country={country}")
-    
-    query_string = "?" + "&".join(params) if params else ""
-    result = await api_request("GET", f"/api/v1/products{query_string}")
-    
-    return result if result else []
-
-# Bot handlers
+# Initialize bot and dispatcher
+bot = Bot(token=BOT_TOKEN)
+dp = Dispatcher(storage=storage)
 router = Router()
 
-@router.message(CommandStart())
-async def start_handler(message: Message, state: FSMContext):
-    """Handle /start command"""
-    await state.set_state(UserStates.main_menu)
-    
-    # Create or get user
-    user = await create_or_get_user(message)
-    if not user:
-        await message.answer(get_text("en", "error"))
-        return
-    
-    lang = await get_user_language(message.from_user.id)
-    
-    # Welcome message with user info
-    welcome_text = f"{get_text(lang, 'welcome')}\n\n"
-    welcome_text += f"👤 ID: {user['tg_id']}\n"
-    welcome_text += f"📅 Registered: {user['created_at'][:10]}\n"
-    welcome_text += f"💰 Balance: ${user['balance']}\n"
-    welcome_text += f"📦 Total Orders: {user['total_orders']}\n"
-    welcome_text += f"💳 Total Spent: ${user['total_spent']}"
-    
-    await message.answer(
-        welcome_text,
-        reply_markup=create_main_keyboard(lang)
-    )
 
-@router.message(F.text.in_(["🛍️ Products", "🛍️ 商品"]))
-async def products_handler(message: Message, state: FSMContext):
-    """Handle products menu"""
-    await state.set_state(UserStates.browsing_products)
-    
-    lang = await get_user_language(message.from_user.id)
-    
-    await message.answer(
-        f"{get_text(lang, 'products')} - Select category:",
-        reply_markup=create_products_keyboard(lang)
-    )
+class OrderStates(StatesGroup):
+    """States for order flow"""
+    browsing_products = State()
+    selecting_quantity = State()
+    confirming_order = State()
+    waiting_payment = State()
 
-@router.callback_query(F.data.startswith("category:"))
-async def category_handler(callback: CallbackQuery, state: FSMContext):
-    """Handle category selection"""
-    category = callback.data.split(":")[1]
-    lang = await get_user_language(callback.from_user.id)
-    
-    products = await get_products(category=category)
-    
-    if not products:
-        await callback.message.edit_text(
-            get_text(lang, "no_products"),
-            reply_markup=create_products_keyboard(lang)
-        )
-        return
-    
-    # Create products list
-    text = f"📦 {category.upper()} Products:\n\n"
-    keyboard = []
-    
-    for product in products[:10]:  # Limit to 10 products
-        text += f"• {product['name']} - ${product['price']}\n"
-        text += f"  Stock: {product['stock']} | {product['country'] or 'Global'}\n\n"
-        
-        keyboard.append([
-            InlineKeyboardButton(
-                text=f"Buy {product['name']} - ${product['price']}",
-                callback_data=f"buy:{product['id']}"
-            )
-        ])
-    
-    keyboard.append([
-        InlineKeyboardButton(
-            text=get_text(lang, "back"),
-            callback_data="back:products"
-        )
-    ])
-    
-    await callback.message.edit_text(
-        text,
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard)
-    )
 
-@router.callback_query(F.data.startswith("country:"))
-async def country_handler(callback: CallbackQuery, state: FSMContext):
-    """Handle country selection"""
-    country = callback.data.split(":")[1]
-    lang = await get_user_language(callback.from_user.id)
+class UserManager:
+    """Manage user data and interactions"""
     
-    products = await get_products(country=country)
-    
-    if not products:
-        await callback.message.edit_text(
-            get_text(lang, "no_products"),
-            reply_markup=create_products_keyboard(lang)
-        )
-        return
-    
-    # Create products list
-    text = f"🌍 {country} Products:\n\n"
-    keyboard = []
-    
-    for product in products[:10]:
-        text += f"• {product['name']} - ${product['price']}\n"
-        text += f"  Category: {product['category']} | Stock: {product['stock']}\n\n"
-        
-        keyboard.append([
-            InlineKeyboardButton(
-                text=f"Buy {product['name']} - ${product['price']}",
-                callback_data=f"buy:{product['id']}"
-            )
-        ])
-    
-    keyboard.append([
-        InlineKeyboardButton(
-            text=get_text(lang, "back"),
-            callback_data="back:products"
-        )
-    ])
-    
-    await callback.message.edit_text(
-        text,
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard)
-    )
+    @staticmethod
+    async def create_or_get_user(tg_id: int, username: str = None, first_name: str = None) -> Dict[str, Any]:
+        """Create or retrieve user from backend"""
+        try:
+            # Call backend API to create/get user
+            async with aiohttp.ClientSession() as session:
+                user_data = {
+                    "tg_id": tg_id,
+                    "username": username,
+                    "first_name": first_name,
+                    "registered_at": datetime.now().isoformat()
+                }
+                headers = {"X-Internal-Token": INTERNAL_API_TOKEN}
+                
+                async with session.post(
+                    f"{BACKEND_API_URL}/api/v1/users",
+                    json=user_data,
+                    headers=headers
+                ) as resp:
+                    if resp.status == 200:
+                        return await resp.json()
+                    else:
+                        logger.error("Failed to create/get user", status=resp.status)
+                        return {"tg_id": tg_id, "balance": 0, "total_orders": 0}
+        except Exception as e:
+            logger.error("Error creating user", error=str(e))
+            return {"tg_id": tg_id, "balance": 0, "total_orders": 0}
 
-@router.callback_query(F.data.startswith("buy:"))
-async def buy_handler(callback: CallbackQuery, state: FSMContext):
-    """Handle product purchase"""
-    product_id = int(callback.data.split(":")[1])
-    lang = await get_user_language(callback.from_user.id)
+
+class ProductManager:
+    """Manage product catalog and inventory"""
     
-    # Create order
-    order_data = {
-        "tg_id": callback.from_user.id,
-        "product_id": product_id,
-        "quantity": 1
-    }
+    @staticmethod
+    async def get_products(category: str = None, country: str = None) -> list:
+        """Fetch products from backend"""
+        try:
+            async with aiohttp.ClientSession() as session:
+                params = {}
+                if category:
+                    params["category"] = category
+                if country:
+                    params["country"] = country
+                
+                headers = {"X-Internal-Token": INTERNAL_API_TOKEN}
+                async with session.get(
+                    f"{BACKEND_API_URL}/api/v1/products",
+                    params=params,
+                    headers=headers
+                ) as resp:
+                    if resp.status == 200:
+                        return await resp.json()
+                    return []
+        except Exception as e:
+            logger.error("Error fetching products", error=str(e))
+            return []
+
+
+class OrderManager:
+    """Manage order creation and payment"""
     
-    order = await api_request("POST", "/api/v1/orders", order_data)
+    @staticmethod
+    async def create_order(tg_id: int, product_id: int, quantity: int = 1) -> Dict[str, Any]:
+        """Create new order with unique payment amount"""
+        try:
+            async with aiohttp.ClientSession() as session:
+                order_data = {
+                    "tg_id": tg_id,
+                    "product_id": product_id,
+                    "quantity": quantity
+                }
+                headers = {"X-Internal-Token": INTERNAL_API_TOKEN}
+                
+                async with session.post(
+                    f"{BACKEND_API_URL}/api/v1/orders",
+                    json=order_data,
+                    headers=headers
+                ) as resp:
+                    if resp.status == 200:
+                        return await resp.json()
+                    else:
+                        logger.error("Failed to create order", status=resp.status)
+                        return {}
+        except Exception as e:
+            logger.error("Error creating order", error=str(e))
+            return {}
+
+
+# Bot handlers
+@router.message(Command("start"))
+async def start_command(message: Message, state: FSMContext):
+    """Handle /start command - register user and show main menu"""
+    user_data = await UserManager.create_or_get_user(
+        tg_id=message.from_user.id,
+        username=message.from_user.username,
+        first_name=message.from_user.first_name
+    )
     
-    if not order:
-        await callback.answer(get_text(lang, "error"))
-        return
+    welcome_text = f"""
+🤖 **Welcome to TeleBot Sales Platform!**
+
+👤 **Your Profile:**
+• TG ID: `{user_data.get('tg_id')}`
+• Username: @{message.from_user.username or 'Not set'}
+• Registration: {user_data.get('registered_at', 'Just now')}
+• Balance: ${user_data.get('balance', 0):.2f}
+• Total Orders: {user_data.get('total_orders', 0)}
+
+Choose an option from the menu below:
+    """
     
-    await state.set_state(UserStates.waiting_payment)
-    await state.update_data(order_id=order["id"])
-    
-    # Calculate expiry time
-    expires_at = datetime.fromisoformat(order["expires_at"].replace("Z", "+00:00"))
-    time_left = expires_at - datetime.utcnow().replace(tzinfo=expires_at.tzinfo)
-    minutes_left = int(time_left.total_seconds() / 60)
-    
-    # Payment information
-    payment_text = f"💳 {get_text(lang, 'order_created')}\n\n"
-    payment_text += f"🔢 Order ID: {order['id']}\n"
-    payment_text += f"💰 {get_text(lang, 'payment_amount')}: {order['total_amount']} USDT\n"
-    payment_text += f"📍 {get_text(lang, 'payment_address')}:\n"
-    payment_text += f"`{order['payment_address']}`\n\n"
-    payment_text += f"⏰ {get_text(lang, 'payment_expires')} {minutes_left} {get_text(lang, 'minutes')}\n\n"
-    payment_text += f"⚠️ Send EXACTLY {order['total_amount']} USDT to complete payment!"
-    
-    keyboard = [
+    # Main menu keyboard
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(
-                text="🔄 Check Payment",
-                callback_data=f"check_payment:{order['id']}"
-            )
+            InlineKeyboardButton(text="📦 Products", callback_data="menu_products"),
+            InlineKeyboardButton(text="💰 Balance", callback_data="menu_balance")
         ],
         [
-            InlineKeyboardButton(
-                text=get_text(lang, "cancel"),
-                callback_data="cancel_order"
-            )
+            InlineKeyboardButton(text="📱 API Login", callback_data="menu_api_login"),
+            InlineKeyboardButton(text="📞 Support", callback_data="menu_support")
+        ],
+        [
+            InlineKeyboardButton(text="🌍 English", callback_data="menu_language"),
+            InlineKeyboardButton(text="👤 Profile", callback_data="menu_profile")
         ]
-    ]
+    ])
+    
+    await message.answer(welcome_text, reply_markup=keyboard, parse_mode="Markdown")
+
+
+@router.callback_query(Text("menu_products"))
+async def show_products_menu(callback: CallbackQuery, state: FSMContext):
+    """Show product categories"""
+    categories_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="🇺🇸 USA Accounts", callback_data="cat_usa"),
+            InlineKeyboardButton(text="🇬🇧 UK Accounts", callback_data="cat_uk")
+        ],
+        [
+            InlineKeyboardButton(text="🇩🇪 Germany", callback_data="cat_de"),
+            InlineKeyboardButton(text="🇫🇷 France", callback_data="cat_fr")
+        ],
+        [
+            InlineKeyboardButton(text="📱 API Login Codes", callback_data="cat_api"),
+            InlineKeyboardButton(text="🔐 Session Files", callback_data="cat_session")
+        ],
+        [
+            InlineKeyboardButton(text="🔍 Search by Code", callback_data="search_code"),
+            InlineKeyboardButton(text="⬅️ Back", callback_data="menu_main")
+        ]
+    ])
+    
+    await callback.message.edit_text(
+        "📦 **Product Categories**\n\nSelect a category to browse available products:",
+        reply_markup=categories_keyboard,
+        parse_mode="Markdown"
+    )
+
+
+@router.callback_query(Text(startswith="cat_"))
+async def show_category_products(callback: CallbackQuery, state: FSMContext):
+    """Show products in selected category"""
+    category = callback.data.split("_")[1]
+    
+    # Map category codes to readable names
+    category_names = {
+        "usa": "USA",
+        "uk": "UK", 
+        "de": "Germany",
+        "fr": "France",
+        "api": "API Login",
+        "session": "Session Files"
+    }
+    
+    products = await ProductManager.get_products(category=category)
+    
+    if not products:
+        await callback.message.edit_text(
+            f"❌ No products available in {category_names.get(category, category)} category.\n\n"
+            "Please check back later or contact support.",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="⬅️ Back", callback_data="menu_products")]
+            ])
+        )
+        return
+    
+    # Create product listing
+    product_text = f"📦 **{category_names.get(category, category)} Products**\n\n"
+    keyboard_buttons = []
+    
+    for product in products[:10]:  # Limit to 10 products
+        product_text += f"🔹 **{product['name']}**\n"
+        product_text += f"   💰 Price: ${product['price']:.2f}\n"
+        product_text += f"   📦 Stock: {product['stock']} available\n"
+        if product.get('description'):
+            product_text += f"   📝 {product['description'][:50]}...\n"
+        product_text += "\n"
+        
+        keyboard_buttons.append([
+            InlineKeyboardButton(
+                text=f"🛒 Buy {product['name']}", 
+                callback_data=f"buy_{product['id']}"
+            )
+        ])
+    
+    keyboard_buttons.append([
+        InlineKeyboardButton(text="⬅️ Back", callback_data="menu_products")
+    ])
+    
+    await callback.message.edit_text(
+        product_text,
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard_buttons),
+        parse_mode="Markdown"
+    )
+
+
+@router.callback_query(Text(startswith="buy_"))
+async def initiate_purchase(callback: CallbackQuery, state: FSMContext):
+    """Start purchase flow for selected product"""
+    product_id = int(callback.data.split("_")[1])
+    
+    # Create order
+    order = await OrderManager.create_order(
+        tg_id=callback.from_user.id,
+        product_id=product_id
+    )
+    
+    if not order:
+        await callback.message.edit_text(
+            "❌ Failed to create order. Please try again or contact support.",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="⬅️ Back", callback_data="menu_products")]
+            ])
+        )
+        return
+    
+    # Show payment information
+    payment_text = f"""
+🛒 **Order Created Successfully!**
+
+📦 **Product:** {order.get('product_name', 'Unknown')}
+💰 **Amount:** ${order.get('total_amount', 0):.6f} USDT
+🏷️ **Order ID:** `{order.get('order_no', 'N/A')}`
+
+💳 **Payment Instructions:**
+• Send exactly **${order.get('precise_amount', 0):.6f} USDT** to the address below
+• Use TRON network (TRC-20)
+• Payment window: **15 minutes**
+
+🏦 **Payment Address:**
+`{order.get('payment_address', 'TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE')}`
+
+⚠️ **Important:**
+• Send the EXACT amount shown above
+• Any other amount will not be processed
+• Payment expires in 15 minutes
+
+Your order will be delivered automatically after payment confirmation.
+    """
+    
+    # Store order info in state
+    await state.update_data(order_id=order.get('order_no'))
+    await state.set_state(OrderStates.waiting_payment)
+    
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="✅ Check Payment", callback_data=f"check_payment_{order.get('order_no')}"),
+            InlineKeyboardButton(text="❌ Cancel", callback_data="cancel_order")
+        ],
+        [
+            InlineKeyboardButton(text="📞 Support", callback_data="menu_support")
+        ]
+    ])
     
     await callback.message.edit_text(
         payment_text,
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard),
-        parse_mode=ParseMode.MARKDOWN
+        reply_markup=keyboard,
+        parse_mode="Markdown"
     )
 
-@router.callback_query(F.data.startswith("check_payment:"))
-async def check_payment_handler(callback: CallbackQuery, state: FSMContext):
-    """Check payment status"""
-    order_id = int(callback.data.split(":")[1])
-    lang = await get_user_language(callback.from_user.id)
-    
-    # Get order status from backend
-    order = await api_request("GET", f"/api/v1/orders/{order_id}")
-    
-    if not order:
-        await callback.answer(get_text(lang, "error"))
-        return
-    
-    if order["status"] == "paid":
-        await callback.message.edit_text(
-            f"✅ {get_text(lang, 'payment_confirmed')}\n\n"
-            f"📦 Your order is being processed and will be delivered shortly.",
-            reply_markup=None
-        )
-        await state.clear()
-        
-    elif order["status"] == "completed":
-        await callback.message.edit_text(
-            f"🎉 {get_text(lang, 'product_delivered')}\n\n"
-            f"Order #{order['id']} completed successfully!",
-            reply_markup=None
-        )
-        await state.clear()
-        
-    elif order["status"] == "expired":
-        await callback.message.edit_text(
-            get_text(lang, "order_expired"),
-            reply_markup=create_products_keyboard(lang)
-        )
-        await state.set_state(UserStates.browsing_products)
-        
-    else:
-        await callback.answer("⏳ Payment not yet detected. Please wait...")
 
-@router.message(F.text.in_(["🌐 Language", "🌐 语言"]))
-async def language_handler(message: Message):
-    """Handle language selection"""
-    await message.answer(
-        "🌐 Select your language / 选择语言:",
-        reply_markup=create_language_keyboard()
-    )
-
-@router.callback_query(F.data.startswith("lang:"))
-async def set_language_handler(callback: CallbackQuery):
-    """Set user language"""
-    lang = callback.data.split(":")[1]
+@router.callback_query(Text(startswith="check_payment_"))
+async def check_payment_status(callback: CallbackQuery, state: FSMContext):
+    """Check payment status for order"""
+    order_no = callback.data.split("_", 2)[2]
     
-    # In production, save language to database
+    try:
+        async with aiohttp.ClientSession() as session:
+            headers = {"X-Internal-Token": INTERNAL_API_TOKEN}
+            async with session.get(
+                f"{BACKEND_API_URL}/api/v1/orders/{order_no}/status",
+                headers=headers
+            ) as resp:
+                if resp.status == 200:
+                    order_status = await resp.json()
+                    
+                    if order_status.get('status') == 'paid':
+                        # Payment confirmed - show delivery info
+                        await callback.message.edit_text(
+                            f"✅ **Payment Confirmed!**\n\n"
+                            f"🎉 Your order has been processed successfully.\n"
+                            f"📦 Download link: {order_status.get('download_link', 'Check your messages')}\n\n"
+                            f"Thank you for your purchase!",
+                            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                                [InlineKeyboardButton(text="🏠 Main Menu", callback_data="menu_main")]
+                            ]),
+                            parse_mode="Markdown"
+                        )
+                        await state.clear()
+                    elif order_status.get('status') == 'expired':
+                        await callback.message.edit_text(
+                            "⏰ **Payment Expired**\n\n"
+                            "The payment window has expired. Please create a new order.",
+                            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                                [InlineKeyboardButton(text="🔄 New Order", callback_data="menu_products")]
+                            ]),
+                            parse_mode="Markdown"
+                        )
+                        await state.clear()
+                    else:
+                        await callback.answer("⏳ Payment not yet received. Please wait a moment and try again.")
+                else:
+                    await callback.answer("❌ Error checking payment status. Please try again.")
+    except Exception as e:
+        logger.error("Error checking payment", error=str(e))
+        await callback.answer("❌ Error checking payment status. Please try again.")
+
+
+@router.callback_query(Text("menu_api_login"))
+async def show_api_login_menu(callback: CallbackQuery):
+    """Show API login options"""
+    api_text = """
+📱 **API Login Services**
+
+Get access to Telegram API endpoints for your applications:
+
+🔹 **Mobile API Access**
+   • Format: `https://miha.uk/tgapi/{token}/{uuid}/{action}`
+   • Direct HTML/JSON responses
+   • Real-time login verification
+
+🔹 **Available Actions:**
+   • `GetHTML` - Get account HTML data
+   • `GetAuth` - Authentication codes
+   • `GetSession` - Session information
+   • `Verify` - Account verification
+
+💰 **Pricing:** $2.50 - $15.00 per endpoint
+📦 **Delivery:** Instant after payment
+    """
+    
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="🛒 Browse API Products", callback_data="cat_api"),
+            InlineKeyboardButton(text="📖 API Documentation", callback_data="api_docs")
+        ],
+        [
+            InlineKeyboardButton(text="⬅️ Back", callback_data="menu_main")
+        ]
+    ])
+    
     await callback.message.edit_text(
-        f"✅ Language set to {'English' if lang == 'en' else '中文'}",
-        reply_markup=create_main_keyboard(lang)
+        api_text,
+        reply_markup=keyboard,
+        parse_mode="Markdown"
     )
 
-@router.callback_query(F.data.startswith("back:"))
-async def back_handler(callback: CallbackQuery, state: FSMContext):
-    """Handle back navigation"""
-    destination = callback.data.split(":")[1]
-    lang = await get_user_language(callback.from_user.id)
-    
-    if destination == "main":
-        await state.set_state(UserStates.main_menu)
-        await callback.message.edit_text(
-            get_text(lang, "main_menu"),
-            reply_markup=create_main_keyboard(lang)
-        )
-    elif destination == "products":
-        await state.set_state(UserStates.browsing_products)
-        await callback.message.edit_text(
-            f"{get_text(lang, 'products')} - Select category:",
-            reply_markup=create_products_keyboard(lang)
-        )
 
-@router.message(F.text.in_(["👤 User Information", "👤 用户信息"]))
-async def user_info_handler(message: Message):
-    """Handle user information request"""
-    user = await api_request("GET", f"/api/v1/users/{message.from_user.id}")
+@router.callback_query(Text("menu_main"))
+async def back_to_main_menu(callback: CallbackQuery, state: FSMContext):
+    """Return to main menu"""
+    await state.clear()
     
-    if not user:
-        await message.answer(get_text("en", "error"))
-        return
+    main_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="📦 Products", callback_data="menu_products"),
+            InlineKeyboardButton(text="💰 Balance", callback_data="menu_balance")
+        ],
+        [
+            InlineKeyboardButton(text="📱 API Login", callback_data="menu_api_login"),
+            InlineKeyboardButton(text="📞 Support", callback_data="menu_support")
+        ],
+        [
+            InlineKeyboardButton(text="🌍 English", callback_data="menu_language"),
+            InlineKeyboardButton(text="👤 Profile", callback_data="menu_profile")
+        ]
+    ])
     
-    lang = await get_user_language(message.from_user.id)
-    
-    info_text = f"👤 {get_text(lang, 'user_info')}\n\n"
-    info_text += f"🆔 Telegram ID: {user['tg_id']}\n"
-    info_text += f"👤 Username: @{user['username'] or 'N/A'}\n"
-    info_text += f"📅 Registered: {user['created_at'][:10]}\n"
-    info_text += f"💰 Balance: ${user['balance']}\n"
-    info_text += f"📦 Total Orders: {user['total_orders']}\n"
-    info_text += f"💳 Total Spent: ${user['total_spent']}\n"
-    info_text += f"🌐 Language: {user['language_code']}"
-    
-    await message.answer(info_text)
+    await callback.message.edit_text(
+        "🏠 **Main Menu**\n\nWhat would you like to do?",
+        reply_markup=main_keyboard,
+        parse_mode="Markdown"
+    )
+
+
+async def setup_bot_commands():
+    """Set up bot commands for Telegram menu"""
+    commands = [
+        BotCommand(command="start", description="🏠 Start bot and show main menu"),
+        BotCommand(command="products", description="📦 Browse products"),
+        BotCommand(command="balance", description="💰 Check balance"),
+        BotCommand(command="orders", description="📋 Order history"),
+        BotCommand(command="support", description="📞 Contact support"),
+    ]
+    await bot.set_my_commands(commands)
+
 
 async def main():
-    """Main bot function"""
-    global bot, vault_client
-    
-    # Initialize Vault client
-    vault_client = VaultClient(VAULT_ADDR, VAULT_TOKEN)
-    await vault_client.initialize_secrets()
-    
-    # Get bot token from Vault
-    bot_token = await vault_client.get_secret("bot/token")
-    if not bot_token:
-        logger.error("Bot token not found in Vault")
-        return
-    
-    # Initialize Redis storage for FSM
-    redis_client = redis.from_url(REDIS_URL)
-    storage = RedisStorage(redis_client)
-    
-    # Initialize bot and dispatcher
-    bot = Bot(
-        token=bot_token,
-        default=DefaultBotProperties(parse_mode=ParseMode.HTML)
-    )
-    
-    dp = Dispatcher(storage=storage)
-    dp.include_router(router)
-    
-    # Start polling
-    logger.info("Starting Telegram bot...")
+    """Main function to start the bot"""
     try:
+        # Setup bot commands
+        await setup_bot_commands()
+        
+        # Include router
+        dp.include_router(router)
+        
+        # Start polling
+        logger.info("Bot started successfully")
         await dp.start_polling(bot)
+        
+    except Exception as e:
+        logger.error("Error starting bot", error=str(e))
     finally:
         await bot.session.close()
-        await vault_client.close()
-        await redis_client.close()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

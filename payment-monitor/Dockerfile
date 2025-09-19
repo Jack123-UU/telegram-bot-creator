@@ -1,29 +1,30 @@
+# TRON Payment Monitor Service
 FROM python:3.11-slim
 
 WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements
-COPY requirements.txt .
-
 # Install Python dependencies
+COPY payment-monitor/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy payment monitor code
-COPY . .
+# Copy payment monitor source
+COPY payment-monitor/ .
 
-# Copy backend modules for imports
-COPY ../backend/tron_client.py ./backend/
-COPY ../backend/vault_client.py ./backend/
-RUN mkdir -p backend && touch backend/__init__.py
+# Create non-root user
+RUN groupadd -r monitor && useradd -r -g monitor monitor
+RUN chown -R monitor:monitor /app
+USER monitor
 
 # Health check
-HEALTHCHECK --interval=60s --timeout=30s --start-period=10s --retries=3 \
-    CMD python -c "import sys; sys.exit(0)" || exit 1
+HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
+    CMD python -c "print('Payment monitor health check')" || exit 1
 
-# Run the payment monitor
-CMD ["python", "main.py"]
+# Default command
+CMD ["python", "tron_monitor.py"]
