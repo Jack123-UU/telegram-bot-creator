@@ -1,171 +1,144 @@
-# Telegram Bot Sales & Distribution Platform PRD
+# TeleBot Sales Platform with TRON Payment System - PRD
 
 ## Core Purpose & Success
 
-**Mission Statement**: Create a secure, scalable Telegram bot platform for selling digital products (tdata/session files) with automated payment processing via TRON blockchain and one-click agent distribution capabilities.
+**Mission Statement**: Create a comprehensive Telegram sales bot platform with TRON blockchain payment processing, enabling automated product sales with secure payment verification and easy deployment for distributors.
 
 **Success Indicators**: 
-- 99.9% payment matching accuracy with unique amount trailing digits
-- <5 second order processing from payment to delivery
-- Zero manual intervention required for standard transactions
-- Agent deployment completed in <1 hour with provided templates
+- Bot successfully processes orders with unique payment amounts
+- TRON payment monitoring correctly matches transactions to orders
+- Docker deployment enables easy distributor onboarding
+- System handles concurrent users without payment conflicts
 
-**Experience Qualities**: Secure, Automated, Professional
+**Experience Qualities**: Secure, Automated, Scalable
 
 ## Project Classification & Approach
 
-**Complexity Level**: Complex Application (advanced functionality, multi-tenant, blockchain integration)
-**Primary User Activity**: Acting & Creating (purchasing, managing inventory, deploying agents)
+**Complexity Level**: Complex Application (advanced functionality, accounts, blockchain integration)
+**Primary User Activity**: Acting (purchasing, managing sales)
 
 ## Thought Process for Feature Selection
 
-**Core Problem Analysis**: Existing telegram bot sales platforms lack proper security, automated payment verification, and easy agent distribution. Manual payment verification creates delays and errors.
+**Core Problem Analysis**: Enable secure, automated sales through Telegram with cryptocurrency payments while providing easy deployment for distributors.
 
 **User Context**: 
-- End users: Quick purchase and immediate delivery of digital goods
-- Agents: Easy setup of their own bot instances with inventory sync
-- Administrators: Centralized control with detailed audit trails
+- Bot users: Browse and purchase products via Telegram
+- Administrators: Manage inventory, monitor sales, configure payment settings
+- Distributors: Deploy their own instances with custom pricing
 
 **Critical Path**: 
-1. User browses products → selects item → receives unique payment amount
-2. User pays exact amount to fixed TRON address → system auto-detects → delivers product
-3. Agents can clone entire setup with one-click deployment templates
+1. User discovery → Product browsing → Order creation → Payment → Automated delivery
+2. Admin: Product upload → Inventory management → Payment monitoring → Analytics
 
 **Key Moments**:
-1. Payment detection and automatic order fulfillment
-2. Secure file delivery with temporary encrypted links  
-3. Agent onboarding and inventory synchronization
+1. Unique payment amount generation to avoid conflicts
+2. Real-time TRON blockchain monitoring and payment verification
+3. Automated product delivery after payment confirmation
 
 ## Essential Features
 
-### Bot User Interaction
-- **Functionality**: Complete Telegram bot with menu navigation, product browsing, ordering, payment, delivery
-- **Purpose**: Provide seamless user experience matching @tdata888bot functionality
-- **Success Criteria**: Users can complete purchase flow in <3 minutes, 95% user satisfaction
+### 1. Telegram Bot (aiogram)
+- **Functionality**: User registration, product browsing, order creation, payment processing
+- **Purpose**: Primary customer interface for sales automation
+- **Success Criteria**: 99% uptime, sub-3s response times, accurate payment tracking
 
-### Payment & Recognition System
-- **Functionality**: Fixed TRON address + unique amount trailing digits for order matching
-- **Purpose**: Eliminate payment verification delays while maintaining security
-- **Success Criteria**: 99.9% payment matching accuracy, 15-minute timeout window
+### 2. TRON Payment Processing
+- **Functionality**: Generate unique payment amounts, monitor blockchain, verify transactions
+- **Purpose**: Secure, automated payment verification without manual intervention
+- **Success Criteria**: Zero false positives, 100% payment detection within 2 minutes
 
-### Product & Inventory Management
-- **Functionality**: Bulk upload via CSV/Excel, async validation, encrypted storage
-- **Purpose**: Streamline inventory management for large catalogs
-- **Success Criteria**: Support 10K+ products, <1% invalid inventory shipped
-
-### Distribution & One-Click Cloning
-- **Functionality**: Docker/Helm templates for agent deployment, inventory sync APIs
-- **Purpose**: Enable rapid agent network expansion
-- **Success Criteria**: Agent deployment in <1 hour, real-time inventory sync
-
-### Admin Dashboard
-- **Functionality**: Web interface for all management functions with role-based access
-- **Purpose**: Centralized control with audit trails
-- **Success Criteria**: All operations logged, 2FA enforced, approval workflows
-
-### Security & Secrets Management
-- **Functionality**: Vault/KMS integration, encrypted file storage, audit logging
-- **Purpose**: Enterprise-grade security for sensitive operations
-- **Success Criteria**: Zero secrets in code/config, all changes audited
+### 3. Docker Deployment System
+- **Functionality**: Containerized deployment with easy configuration for distributors
+- **Purpose**: Enable rapid distributor onboarding and scaling
+- **Success Criteria**: 5-minute deployment time, one-command setup
 
 ## Design Direction
 
 ### Visual Tone & Identity
-**Emotional Response**: Professional confidence and technological sophistication
-**Design Personality**: Clean, modern, enterprise-grade with subtle tech aesthetics
-**Visual Metaphors**: Network connections, secure vaults, automated processes
-**Simplicity Spectrum**: Minimal interface with rich functionality - complexity hidden behind clean UI
+**Emotional Response**: Professional confidence with technical sophistication
+**Design Personality**: Clean, modern, trustworthy - balancing accessibility with advanced functionality
+**Visual Metaphors**: Circuit patterns, secure locks, automated workflows
+**Simplicity Spectrum**: Minimal interface with powerful backend systems
 
 ### Color Strategy
-**Color Scheme Type**: Complementary with tech accent
-**Primary Color**: Deep blue (#1a365d) - trust and stability
-**Secondary Colors**: Light blue-gray (#f7fafc) for backgrounds, dark gray (#2d3748) for text
-**Accent Color**: Electric blue (#3182ce) for CTAs and important elements
-**Color Psychology**: Blues convey trust and technology, grays provide professional foundation
-**Color Accessibility**: All combinations meet WCAG AA standards (4.5:1+ contrast)
+**Color Scheme Type**: Monochromatic with accent colors
+**Primary Color**: Deep blue (#1e40af) - trust and technology
+**Secondary Colors**: Gray variants for hierarchy
+**Accent Color**: Green (#10b981) for success states, Orange (#f59e0b) for warnings
+**Color Psychology**: Blue conveys security and reliability, essential for financial applications
 
 ### Typography System
-**Font Pairing Strategy**: Inter for UI (clean, modern) + JetBrains Mono for code/technical data
-**Typographic Hierarchy**: Clear 6-level scale from large headings to small labels
-**Font Personality**: Professional, readable, slightly technical
-**Readability Focus**: 16px minimum body text, 1.5 line height, optimal 50-75 character line length
-**Typography Consistency**: Consistent spacing scale (0.5rem base unit)
-**Which fonts**: Inter (primary), JetBrains Mono (monospace)
-**Legibility Check**: Both fonts tested for high legibility at all sizes
+**Font Pairing Strategy**: 
+- Primary: Inter (clean, technical readability)
+- Monospace: JetBrains Mono (code, addresses, transaction data)
+**Typographic Hierarchy**: Clear distinction between headers, body text, and technical data
+**Font Personality**: Professional, readable, modern
+**Which fonts**: Inter for UI text, JetBrains Mono for technical data
+**Legibility Check**: High contrast ratios, appropriate sizing for all text
 
 ### Visual Hierarchy & Layout
-**Attention Direction**: F-pattern layout for dashboards, Z-pattern for forms
-**White Space Philosophy**: Generous spacing for breathing room, 24px base grid
-**Grid System**: 12-column responsive grid with consistent breakpoints
-**Responsive Approach**: Mobile-first design with progressive enhancement
-**Content Density**: Information-rich but scannable, grouped logically
+**Attention Direction**: Clear visual flow from status indicators to action buttons
+**White Space Philosophy**: Generous spacing around critical information like payment addresses
+**Grid System**: 12-column responsive grid with consistent spacing
+**Responsive Approach**: Mobile-first design with desktop enhancements
 
 ### Animations
-**Purposeful Meaning**: Subtle transitions to guide attention and provide feedback
-**Hierarchy of Movement**: Loading states > state changes > micro-interactions
-**Contextual Appropriateness**: Professional and functional, avoid playful animations
+**Purposeful Meaning**: Subtle loading states for blockchain confirmations
+**Hierarchy of Movement**: Payment status changes get priority animation treatment
+**Contextual Appropriateness**: Minimal, functional animations that reinforce system state
 
 ### UI Elements & Component Selection
-**Component Usage**: Shadcn components for consistency, custom components only when needed
-**Component Customization**: Tailwind utilities for brand alignment
-**Component States**: Clear hover, focus, active, disabled states for all interactive elements
-**Icon Selection**: Phosphor icons for consistency and wide coverage
-**Component Hierarchy**: Primary actions prominent, secondary actions subtle
-**Spacing System**: 4px base unit (0.25rem) with 8px, 16px, 24px, 32px common spacings
-**Mobile Adaptation**: Touch-friendly targets (44px minimum), simplified navigation
-
-### Visual Consistency Framework
-**Design System Approach**: Component-based design with strict adherence to tokens
-**Style Guide Elements**: Color palette, typography scale, spacing system, component library
-**Visual Rhythm**: Consistent spacing and sizing creates predictable patterns
-**Brand Alignment**: Professional tech aesthetic reinforces platform reliability
+**Component Usage**: Cards for products, Tables for transaction history, Forms for configuration
+**Component Customization**: Custom payment status indicators with TRON branding
+**Component States**: Clear loading, success, error, and pending states for all operations
+**Icon Selection**: Cryptocurrency icons, status indicators, navigation elements
+**Mobile Adaptation**: Touch-friendly controls, swipe gestures for product browsing
 
 ### Accessibility & Readability
-**Contrast Goal**: WCAG AA compliance minimum, AAA preferred for body text
-**Color Combinations**:
-- Primary on white: 4.5:1+ contrast ✓
-- Accent on primary: 4.5:1+ contrast ✓  
-- Text on backgrounds: 7:1+ contrast ✓
-
-## Edge Cases & Problem Scenarios
-
-**Potential Obstacles**: 
-- Network issues during payment verification
-- Invalid inventory files being sold
-- Agent deployment failures
-- Blockchain congestion affecting payment detection
-
-**Edge Case Handling**:
-- Retry mechanisms with exponential backoff
-- Pre-validation of all inventory
-- Rollback procedures for failed deployments  
-- Alternative payment detection methods
-
-**Technical Constraints**: 
-- TRON network limitations and fees
-- File storage encryption/decryption performance
-- Concurrent order processing limits
+**Contrast Goal**: WCAG AA compliance minimum (4.5:1 for normal text, 3:1 for large text)
 
 ## Implementation Considerations
 
-**Scalability Needs**: Design for 1000+ concurrent users, 10K+ products, 100+ agents
-**Testing Focus**: Payment processing accuracy, file delivery security, deployment automation
-**Critical Questions**: 
-- How to handle TRON network downtime?
-- What's the backup plan for Vault/KMS failures?
-- How to prevent inventory race conditions?
+### Technical Stack
+- **Backend**: Python + FastAPI + aiogram
+- **Database**: PostgreSQL for transactions, Redis for caching
+- **Blockchain**: TRON network integration with TronPy
+- **Deployment**: Docker + Docker Compose
+- **Monitoring**: Prometheus + Grafana
+
+### Security Requirements
+- Encrypted storage for sensitive data
+- Secure webhook handling for Telegram
+- Protected API endpoints with authentication
+- Audit logging for all financial transactions
+
+### Scalability Needs
+- Horizontal scaling capability
+- Database connection pooling
+- Caching layer for frequently accessed data
+- Queue system for payment processing
+
+## Edge Cases & Problem Scenarios
+
+**Potential Obstacles**:
+- Network delays affecting payment detection
+- Concurrent orders creating payment amount conflicts
+- TRON network congestion
+- Bot rate limiting by Telegram
+
+**Edge Case Handling**:
+- Timeout mechanisms for stale payments
+- Unique payment amount generation with collision detection
+- Fallback RPC endpoints for blockchain monitoring
+- Graceful degradation during high load
+
+## Critical Questions
+
+- How to ensure payment amount uniqueness across distributed instances?
+- What happens if TRON network is temporarily unavailable?
+- How to handle partial payments or overpayments?
+- What security measures prevent payment manipulation?
 
 ## Reflection
 
-This approach is uniquely suited because it combines the familiar Telegram bot interface users expect with enterprise-grade backend security and automation. The fixed-address + unique-amount payment system provides the perfect balance of security and user experience.
-
-Key assumptions to challenge:
-- Will users accept the unique amount payment method?
-- Can we achieve target payment detection speed during network congestion?
-- Is the security model sufficient for the value being transacted?
-
-What makes this solution exceptional:
-- Zero-trust security architecture with proper secrets management
-- Automated payment verification eliminates human error
-- One-click agent deployment democratizes distribution
-- Comprehensive audit trails enable compliance and debugging
+This approach uniquely combines Telegram's accessibility with blockchain payment security while maintaining distributor flexibility through containerization. The system balances automated operation with human oversight, ensuring both efficiency and security in financial transactions.

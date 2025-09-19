@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Button } from '@/components/ui/button'
-import { Robot, ChartBar, Users, CloudArrowUp, List, Package, Wallet, Shield } from '@phosphor-icons/react'
+import { Robot, ChartBar, Users, CloudArrowUp, List, Package, Wallet, Shield, Lightning } from '@phosphor-icons/react'
 import { Dashboard } from '@/components/Dashboard'
 import { BotManager } from '@/components/BotManager'
 import { ProductManager } from '@/components/ProductManager'
@@ -9,9 +9,10 @@ import { PaymentCenter } from '@/components/PaymentCenter'
 import { AgentManager } from '@/components/AgentManager'
 import { DeploymentCenter } from '@/components/DeploymentCenter'
 import { SecurityCenter } from '@/components/SecurityCenter'
+import { BackendIntegration } from '@/components/BackendIntegration'
 import { cn } from '@/lib/utils'
 
-export type NavigationItem = 'dashboard' | 'bots' | 'products' | 'payments' | 'agents' | 'deploy' | 'security'
+export type NavigationItem = 'dashboard' | 'bots' | 'products' | 'payments' | 'agents' | 'deploy' | 'security' | 'backend'
 
 function App() {
   const [currentView, setCurrentView] = useKV<NavigationItem>('current-view', 'dashboard')
@@ -23,6 +24,7 @@ function App() {
     { id: 'products' as const, label: 'Products', icon: Package },
     { id: 'payments' as const, label: 'Payments', icon: Wallet },
     { id: 'agents' as const, label: 'Agents', icon: Users },
+    { id: 'backend' as const, label: 'Backend', icon: Lightning },
     { id: 'deploy' as const, label: 'Deploy', icon: CloudArrowUp },
     { id: 'security' as const, label: 'Security', icon: Shield },
   ]
@@ -39,6 +41,8 @@ function App() {
         return <PaymentCenter />
       case 'agents':
         return <AgentManager />
+      case 'backend':
+        return <BackendIntegration />
       case 'deploy':
         return <DeploymentCenter />
       case 'security':
