@@ -9,6 +9,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { ApiImportWizard } from '@/components/ApiImportWizard'
+import { AutoInventoryManagement } from '@/components/AutoInventoryManagement'
 import { 
   Package, 
   Plus, 
@@ -17,7 +19,10 @@ import {
   Trash, 
   Eye,
   FunnelSimple,
-  Download
+  Download,
+  DeviceMobile,
+  Gear,
+  Robot
 } from '@phosphor-icons/react'
 
 interface Product {
@@ -85,6 +90,8 @@ export function ProductManager() {
   ])
 
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false)
+  const [isApiImportOpen, setIsApiImportOpen] = useState(false)
+  const [isAutoInventoryOpen, setIsAutoInventoryOpen] = useState(false)
   const [selectedCountry, setSelectedCountry] = useState<string>('')
   const [selectedType, setSelectedType] = useState<string>('')
 
@@ -120,6 +127,23 @@ export function ProductManager() {
     }
   }
 
+  const handleApiImport = (endpoints: any[]) => {
+    const newProducts = endpoints.map((endpoint, index) => ({
+      id: `prod-${Date.now()}-${index}`,
+      name: `${endpoint.country} ${endpoint.format}`,
+      country: endpoint.country,
+      type: endpoint.type,
+      price: endpoint.price,
+      cost: endpoint.price * 0.6, // 40% margin
+      stock: 1,
+      status: 'active' as const,
+      uploadedAt: new Date().toISOString().split('T')[0],
+      lastSold: undefined
+    }))
+    
+    setProducts([...currentProducts, ...newProducts])
+  }
+
   const totalValue = currentProducts.reduce((sum, product) => sum + (product.price * product.stock), 0)
   const totalStock = currentProducts.reduce((sum, product) => sum + product.stock, 0)
 
@@ -128,91 +152,122 @@ export function ProductManager() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Product Manager</h1>
-          <p className="text-muted-foreground">Manage your digital product inventory</p>
+          <p className="text-muted-foreground">Manage your digital product inventory and API endpoints</p>
         </div>
-        <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus size={16} />
-              Add Products
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Upload New Products</DialogTitle>
-              <DialogDescription>
-                Upload tdata/session files, API login endpoints, or CSV with product information
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="country">Country</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select country" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {countries.map(country => (
-                        <SelectItem key={country} value={country}>{country}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            onClick={() => setIsAutoInventoryOpen(true)}
+            className="gap-2"
+          >
+            <Robot size={16} />
+            Auto Inventory
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => setIsApiImportOpen(true)}
+            className="gap-2"
+          >
+            <DeviceMobile size={16} />
+            API Import Wizard
+          </Button>
+          <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Plus size={16} />
+                Add Products
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Upload New Products</DialogTitle>
+                <DialogDescription>
+                  Upload tdata/session files, API login endpoints, or CSV with product information
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="country">Country</Label>
+                    <Select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select country" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {countries.map(country => (
+                          <SelectItem key={country} value={country}>{country}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="type">Product Type</Label>
+                    <Select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {types.map(type => (
+                          <SelectItem key={type} value={type}>{getTypeLabel(type)}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Price (USDT)</Label>
+                    <Input type="number" placeholder="29.99" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cost">Cost Price (USDT)</Label>
+                    <Input type="number" placeholder="15.00" />
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="type">Product Type</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {types.map(type => (
-                        <SelectItem key={type} value={type}>{getTypeLabel(type)}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="files">Upload Files</Label>
+                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                    <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      Drag and drop ZIP files here, or click to browse
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Supports: .zip, .csv, .xlsx, .txt (API endpoints) (Max 100MB)
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      API Login format: https://domain.com/api/token/uuid/action
+                    </p>
+                    <Button variant="outline" className="mt-2">
+                      Browse Files
+                    </Button>
+                  </div>
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="price">Price (USDT)</Label>
-                  <Input type="number" placeholder="29.99" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cost">Cost Price (USDT)</Label>
-                  <Input type="number" placeholder="15.00" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="files">Upload Files</Label>
-                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-                  <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground">
-                    Drag and drop ZIP files here, or click to browse
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Supports: .zip, .csv, .xlsx, .txt (API endpoints) (Max 100MB)
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    API Login format: https://domain.com/api/token/uuid/action
-                  </p>
-                  <Button variant="outline" className="mt-2">
-                    Browse Files
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setIsUploadDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={() => setIsUploadDialogOpen(false)}>
+                    Upload & Validate
                   </Button>
                 </div>
               </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsUploadDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={() => setIsUploadDialogOpen(false)}>
-                  Upload & Validate
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
+
+      {/* API Import Wizard */}
+      <ApiImportWizard
+        isOpen={isApiImportOpen}
+        onClose={() => setIsApiImportOpen(false)}
+        onImport={handleApiImport}
+      />
+
+      {/* Auto Inventory Management */}
+      <AutoInventoryManagement
+        isOpen={isAutoInventoryOpen}
+        onClose={() => setIsAutoInventoryOpen(false)}
+      />
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">

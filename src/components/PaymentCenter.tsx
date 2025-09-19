@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { MobileApiVerification } from '@/components/MobileApiVerification'
 import { 
   Wallet, 
   QrCode, 
@@ -17,7 +18,9 @@ import {
   CopySimple,
   Eye,
   Warning,
-  TrendUp
+  TrendUp,
+  Shield,
+  DeviceMobile
 } from '@phosphor-icons/react'
 
 interface Payment {
@@ -86,6 +89,7 @@ export function PaymentCenter() {
   })
 
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false)
+  const [isVerificationOpen, setIsVerificationOpen] = useState(false)
 
   const currentPayments = payments || []
   const currentSettings = settings || {
@@ -124,15 +128,24 @@ export function PaymentCenter() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Payment Center</h1>
-          <p className="text-muted-foreground">Monitor TRON blockchain payments and settings</p>
+          <p className="text-muted-foreground">Monitor TRON blockchain payments and mobile API verification</p>
         </div>
-        <Dialog open={isSettingsDialogOpen} onOpenChange={setIsSettingsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="gap-2">
-              <Wallet size={16} />
-              Payment Settings
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            onClick={() => setIsVerificationOpen(true)}
+            className="gap-2"
+          >
+            <Shield size={16} />
+            API Verification Rules
+          </Button>
+          <Dialog open={isSettingsDialogOpen} onOpenChange={setIsSettingsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Wallet size={16} />
+                Payment Settings
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Payment Configuration</DialogTitle>
@@ -215,6 +228,12 @@ export function PaymentCenter() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Mobile API Verification */}
+      <MobileApiVerification
+        isOpen={isVerificationOpen}
+        onClose={() => setIsVerificationOpen(false)}
+      />
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
