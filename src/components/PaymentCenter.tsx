@@ -146,7 +146,7 @@ export function PaymentCenter() {
                 Payment Settings
               </Button>
             </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Payment Configuration</DialogTitle>
               <DialogDescription>
@@ -227,6 +227,7 @@ export function PaymentCenter() {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Mobile API Verification */}
