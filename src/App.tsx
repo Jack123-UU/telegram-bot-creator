@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Button } from '@/components/ui/button'
-import { Robot, ChartBar, Users, CloudArrowUp, List, Package, Wallet, Shield, Lightning, DeviceMobile, TestTube } from '@phosphor-icons/react'
+import { Robot, ChartBar, Users, CloudArrowUp, List, Package, Wallet, Shield, Lightning, DeviceMobile, TestTube, Gear } from '@phosphor-icons/react'
 import { Dashboard } from '@/components/Dashboard'
 import { BotManager } from '@/components/BotManager'
 import { ProductManager } from '@/components/ProductManager'
@@ -16,9 +16,10 @@ import { DockerTelegramTesting } from '@/components/DockerTelegramTesting'
 import { ComprehensiveTesting } from '@/components/ComprehensiveTesting'
 import { ComprehensiveTestResults } from '@/components/ComprehensiveTestResults'
 import { ProductionSecurity } from '@/components/ProductionSecurity'
+import { BotButtonConfig } from '@/components/BotButtonConfig'
 import { cn } from '@/lib/utils'
 
-export type NavigationItem = 'dashboard' | 'bots' | 'products' | 'payments' | 'agents' | 'deploy' | 'security' | 'backend' | 'demo' | 'real-testing' | 'docker-testing' | 'comprehensive-testing' | 'test-results' | 'production-security'
+export type NavigationItem = 'dashboard' | 'bots' | 'products' | 'payments' | 'agents' | 'deploy' | 'security' | 'backend' | 'demo' | 'real-testing' | 'docker-testing' | 'comprehensive-testing' | 'test-results' | 'production-security' | 'bot-config'
 
 function App() {
   const [currentView, setCurrentView] = useKV<NavigationItem>('current-view', 'test-results')
@@ -26,6 +27,7 @@ function App() {
 
   const navigationItems = [
     { id: 'test-results' as const, label: '全部功能测试结果', icon: TestTube },
+    { id: 'bot-config' as const, label: '机器人按钮配置', icon: Gear },
     { id: 'dashboard' as const, label: 'Dashboard', icon: ChartBar },
     { id: 'docker-testing' as const, label: 'Docker真实测试', icon: CloudArrowUp },
     { id: 'comprehensive-testing' as const, label: '完整系统测试', icon: TestTube },
@@ -45,6 +47,8 @@ function App() {
     switch (currentView) {
       case 'test-results':
         return <ComprehensiveTestResults />
+      case 'bot-config':
+        return <BotButtonConfig />
       case 'dashboard':
         return <Dashboard onNavigate={setCurrentView} />
       case 'docker-testing':
