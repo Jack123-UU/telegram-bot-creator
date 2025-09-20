@@ -14,16 +14,18 @@ import { TelegramSimulator } from '@/components/TelegramSimulator'
 import { RealTelegramTesting } from '@/components/RealTelegramTesting'
 import { DockerTelegramTesting } from '@/components/DockerTelegramTesting'
 import { ComprehensiveTesting } from '@/components/ComprehensiveTesting'
+import { ComprehensiveTestResults } from '@/components/ComprehensiveTestResults'
 import { ProductionSecurity } from '@/components/ProductionSecurity'
 import { cn } from '@/lib/utils'
 
-export type NavigationItem = 'dashboard' | 'bots' | 'products' | 'payments' | 'agents' | 'deploy' | 'security' | 'backend' | 'demo' | 'real-testing' | 'docker-testing' | 'comprehensive-testing' | 'production-security'
+export type NavigationItem = 'dashboard' | 'bots' | 'products' | 'payments' | 'agents' | 'deploy' | 'security' | 'backend' | 'demo' | 'real-testing' | 'docker-testing' | 'comprehensive-testing' | 'test-results' | 'production-security'
 
 function App() {
-  const [currentView, setCurrentView] = useKV<NavigationItem>('current-view', 'docker-testing')
+  const [currentView, setCurrentView] = useKV<NavigationItem>('current-view', 'test-results')
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const navigationItems = [
+    { id: 'test-results' as const, label: '全部功能测试结果', icon: TestTube },
     { id: 'dashboard' as const, label: 'Dashboard', icon: ChartBar },
     { id: 'docker-testing' as const, label: 'Docker真实测试', icon: CloudArrowUp },
     { id: 'comprehensive-testing' as const, label: '完整系统测试', icon: TestTube },
@@ -41,6 +43,8 @@ function App() {
 
   const renderCurrentView = () => {
     switch (currentView) {
+      case 'test-results':
+        return <ComprehensiveTestResults />
       case 'dashboard':
         return <Dashboard onNavigate={setCurrentView} />
       case 'docker-testing':
@@ -68,7 +72,7 @@ function App() {
       case 'production-security':
         return <ProductionSecurity />
       default:
-        return <DockerTelegramTesting />
+        return <ComprehensiveTestResults />
     }
   }
 
