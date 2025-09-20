@@ -1,0 +1,109 @@
+# Development Docker Compose with Test Bot Token
+# For local testing and development
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: telebot-postgres-dev
+    environment:
+      POSTGRES_DB: telebot_dev
+      POSTGRES_USER: telebot_dev
+      POSTGRES_PASSWORD: dev_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: telebot-redis-dev
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_dev_data:/data
+    restart: unless-stopped
+
+  # FastAPI Backend (Development)
+  api-dev:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: telebot-api-dev
+    environment:
+      - DATABASE_URL=postgresql://telebot_dev:dev_password@postgres:5432/telebot_dev
+      - REDIS_URL=redis://redis:6379/0
+      - BOT_TOKEN=8424135673:AAE-QYrIeZ5kgI3VRu1C5gd23CYnQsmjUmk
+      - TRON_WALLET_ADDRESS=TTestAddress123456789abcdefghijk  # Test address
+      - ENVIRONMENT=development
+      - DEBUG=true
+    ports:
+      - "8001:8000"
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./backend:/app
+      - ./logs:/app/logs
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
+
+  # Telegram Bot (Development)
+  bot-dev:
+    build:
+      context: ./bot
+      dockerfile: Dockerfile.dev
+    container_name: telebot-bot-dev
+    environment:
+      - BOT_TOKEN=8424135673:AAE-QYrIeZ5kgI3VRu1C5gd23CYnQsmjUmk
+      - API_BASE_URL=http://api-dev:8000
+      - REDIS_URL=redis://redis:6379/1
+      - ENVIRONMENT=development
+      - DEBUG=true
+    depends_on:
+      - api-dev
+      - redis
+    volumes:
+      - ./bot:/app
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+  # Nginx for Development
+  nginx-dev:
+    image: nginx:alpine
+    container_name: telebot-nginx-dev
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx-dev.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - api-dev
+    restart: unless-stopped
+
+  # Adminer for Database Management
+  adminer:
+    image: adminer
+    container_name: telebot-adminer
+    ports:
+      - "8090:8080"
+    restart: unless-stopped
+
+  # Redis Commander for Redis Management
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: telebot-redis-commander
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8091:8081"
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+volumes:
+  postgres_dev_data:
+  redis_dev_data:

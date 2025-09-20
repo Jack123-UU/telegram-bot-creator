@@ -1,0 +1,189 @@
+{
+  "name": "zh-telebot-platform",
+  "version": "1.0.0",
+  "description": "Complete Telegram Bot Sales Platform with TRON Payment Integration",
+  "main": "src/App.tsx",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/zh-telebot-platform.git"
+  },
+  "author": "TeleBot Development Team",
+  "license": "MIT",
+  "keywords": [
+    "telegram",
+    "bot", 
+    "sales",
+    "platform",
+    "tron",
+    "blockchain",
+    "payment",
+    "react",
+    "python",
+    "fastapi",
+    "aiogram",
+    "docker",
+    "kubernetes"
+  ],
+  "features": [
+    "🤖 Telegram Bot with aiogram framework",
+    "💰 TRON blockchain payment processing", 
+    "🛡️ Enterprise-grade security with Vault",
+    "🐳 Docker containerization for easy deployment",
+    "🔄 One-click distributor cloning system",
+    "📊 React-based admin dashboard",
+    "🌍 Multi-language support (Chinese/English)",
+    "📱 Mobile API integration",
+    "📈 Real-time monitoring and analytics",
+    "🔐 2FA authentication and audit logging"
+  ],
+  "tech_stack": {
+    "frontend": {
+      "framework": "React 18",
+      "language": "TypeScript",
+      "styling": "Tailwind CSS",
+      "components": "shadcn/ui",
+      "icons": "Phosphor Icons",
+      "build": "Vite"
+    },
+    "backend": {
+      "framework": "FastAPI",
+      "language": "Python 3.11+",
+      "database": "PostgreSQL 15",
+      "cache": "Redis 7",
+      "orm": "SQLAlchemy",
+      "migration": "Alembic"
+    },
+    "bot": {
+      "framework": "aiogram 3.x",
+      "language": "Python 3.11+",
+      "async": "asyncio",
+      "webhook": "FastAPI integration"
+    },
+    "blockchain": {
+      "network": "TRON",
+      "token": "USDT-TRC20",
+      "library": "tronpy",
+      "monitoring": "Custom payment listener"
+    },
+    "security": {
+      "secrets": "HashiCorp Vault",
+      "auth": "JWT + 2FA",
+      "encryption": "AES-256",
+      "audit": "Complete operation logging"
+    },
+    "deployment": {
+      "containerization": "Docker & Docker Compose",
+      "orchestration": "Kubernetes with Helm",
+      "ci_cd": "GitHub Actions",
+      "monitoring": "Prometheus + Grafana"
+    }
+  },
+  "deployment_options": [
+    {
+      "type": "docker-compose",
+      "description": "Quick local development and small production deployments",
+      "command": "docker-compose -f docker-compose.prod.yml up -d"
+    },
+    {
+      "type": "kubernetes",
+      "description": "Enterprise-grade scalable deployment",
+      "command": "helm install telebot-platform ./deploy/helm/"
+    },
+    {
+      "type": "distributor-clone",
+      "description": "One-click distributor deployment template",
+      "command": "./scripts/deploy-distributor.sh"
+    }
+  ],
+  "requirements": {
+    "system": {
+      "os": "Linux/macOS/Windows",
+      "docker": "20.10+",
+      "docker_compose": "2.0+",
+      "memory": "4GB minimum, 8GB recommended",
+      "storage": "20GB minimum"
+    },
+    "development": {
+      "node": "18.0+",
+      "python": "3.11+",
+      "postgresql": "15+",
+      "redis": "7+"
+    }
+  },
+  "bot_token": {
+    "test": "8424135673:AAE-QYrIeZ5kgI3VRu1C5gd23CYnQsmjUmk",
+    "production": "Configure in environment variables",
+    "note": "Test token provided for development and testing purposes"
+  },
+  "api_endpoints": {
+    "health": "/health",
+    "docs": "/docs",
+    "api_v1": "/api/v1",
+    "admin": "/admin",
+    "webhook": "/webhook/telegram"
+  },
+  "default_ports": {
+    "frontend": 3000,
+    "backend": 8000,
+    "bot": 8001,
+    "postgres": 5432,
+    "redis": 6379,
+    "grafana": 3001,
+    "prometheus": 9090
+  },
+  "directories": {
+    "backend": "Python FastAPI backend service",
+    "bot": "Telegram bot service with aiogram",
+    "src": "React frontend application",
+    "config": "Configuration files and templates", 
+    "deploy": "Deployment configurations (Docker, Kubernetes)",
+    "scripts": "Automation and deployment scripts",
+    "docs": "Project documentation",
+    "tests": "Integration tests and test utilities"
+  },
+  "testing": {
+    "unit_tests": "pytest for Python, Jest for TypeScript",
+    "integration_tests": "Docker-based full system testing",
+    "api_tests": "Postman collections and automated API testing",
+    "bot_tests": "Telegram bot function testing with test token",
+    "security_tests": "Bandit, safety, and security audit tools"
+  },
+  "monitoring": {
+    "metrics": "Prometheus metrics collection",
+    "visualization": "Grafana dashboards",
+    "logging": "Structured JSON logging",
+    "alerting": "Alertmanager notifications",
+    "health_checks": "Automated health monitoring"
+  },
+  "security_features": [
+    "HashiCorp Vault secret management",
+    "2FA authentication for admin access", 
+    "Operation audit logging",
+    "AES-256 file encryption",
+    "JWT token authentication",
+    "Rate limiting and DDoS protection",
+    "SQL injection prevention",
+    "XSS protection",
+    "CSRF protection"
+  ],
+  "supported_languages": [
+    {
+      "code": "zh-CN",
+      "name": "简体中文",
+      "default": true
+    },
+    {
+      "code": "en-US", 
+      "name": "English",
+      "default": false
+    }
+  ],
+  "created": "2024-12-28",
+  "updated": "2024-12-28",
+  "status": "Production Ready",
+  "compliance": {
+    "telegram_tos": "Please ensure compliance with Telegram Terms of Service",
+    "legal_disclaimer": "Account trading may violate platform terms and local laws",
+    "responsibility": "Users assume full legal responsibility for usage"
+  }
+}
