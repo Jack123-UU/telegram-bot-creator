@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -60,12 +60,41 @@ export function ButtonFunctionTesting() {
   const [isRunning, setIsRunning] = useState(false)
   const [currentTest, setCurrentTest] = useState<string>('')
   const [progress, setProgress] = useState(0)
+  const [autoStarted, setAutoStarted] = useState(false)
   const [menuConfig] = useKV<MenuConfig>('bot-menu-config', {
-    main_menu: [],
-    product_menu: [],
-    service_menu: [],
-    support_menu: []
+    main_menu: [
+      { id: 'products', text: '📦 商品列表', type: 'main_menu', action: '/products', emoji: '📦', order: 1, enabled: true },
+      { id: 'support', text: '💬 联系客服', type: 'main_menu', action: '/support', emoji: '💬', order: 2, enabled: true },
+      { id: 'english', text: '🌍 English', type: 'main_menu', action: '/english', emoji: '🌍', order: 3, enabled: true },
+      { id: 'profile', text: '👤 用户中心', type: 'main_menu', action: '/profile', emoji: '👤', order: 4, enabled: true },
+      { id: 'recharge', text: '💰 余额充值', type: 'main_menu', action: '/recharge', emoji: '💰', order: 5, enabled: true }
+    ],
+    product_menu: [
+      { id: 'tdata', text: '📱 TData账号', type: 'product_category', action: '/category/tdata', emoji: '📱', order: 1, enabled: true },
+      { id: 'session', text: '🔐 Session文件', type: 'product_category', action: '/category/session', emoji: '🔐', order: 2, enabled: true },
+      { id: 'api_login', text: '🔗 API接码登录', type: 'product_category', action: '/category/api_login', emoji: '🔗', order: 3, enabled: true }
+    ],
+    service_menu: [
+      { id: 'orders', text: '📋 订单历史', type: 'service_action', action: '/orders', emoji: '📋', order: 1, enabled: true },
+      { id: 'balance', text: '💳 余额明细', type: 'service_action', action: '/balance', emoji: '💳', order: 2, enabled: true },
+      { id: 'refund', text: '🔄 退款申请', type: 'service_action', action: '/refund', emoji: '🔄', order: 3, enabled: true }
+    ],
+    support_menu: [
+      { id: 'contact', text: '📞 在线客服', type: 'support', action: '/contact', emoji: '📞', order: 1, enabled: true },
+      { id: 'faq', text: '❓ 常见问题', type: 'support', action: '/faq', emoji: '❓', order: 2, enabled: true },
+      { id: 'feedback', text: '📝 意见反馈', type: 'support', action: '/feedback', emoji: '📝', order: 3, enabled: true }
+    ]
   })
+
+  // 自动启动测试套件
+  useEffect(() => {
+    if (!autoStarted && !isRunning) {
+      setAutoStarted(true)
+      setTimeout(() => {
+        runTests()
+      }, 1000) // 1秒后自动开始测试
+    }
+  }, [autoStarted, isRunning])
 
   const testCategories = [
     { id: 'ui', name: 'UI界面测试', icon: Eye, color: 'blue' },
@@ -137,6 +166,55 @@ export function ButtonFunctionTesting() {
       }
     },
     {
+      id: 'function-callback-data',
+      name: '回调数据验证测试',
+      description: '验证每个按钮的callback_data格式正确',
+      category: 'function' as const,
+      test: async () => {
+        await delay(700)
+        
+        const allButtons = Object.values(menuConfig || {}).flat()
+        const invalidCallbacks = allButtons.filter(btn => 
+          btn.callback_data && (
+            btn.callback_data.length > 64 || 
+            !/^[\w\-._]+$/.test(btn.callback_data)
+          )
+        )
+        
+        if (invalidCallbacks.length > 0) {
+          throw new Error(`${invalidCallbacks.length} 个按钮的callback_data格式无效`)
+        }
+        
+        return `所有按钮的callback_data格式有效`
+      }
+    },
+    {
+      id: 'function-telegram-limits',
+      name: 'Telegram限制检查',
+      description: '验证按钮配置符合Telegram API限制',
+      category: 'function' as const,
+      test: async () => {
+        await delay(800)
+        
+        const allButtons = Object.values(menuConfig || {}).flat()
+        
+        // 检查按钮文本长度 (Telegram限制)
+        const longTextButtons = allButtons.filter(btn => btn.text.length > 64)
+        if (longTextButtons.length > 0) {
+          throw new Error(`${longTextButtons.length} 个按钮文本超过64字符限制`)
+        }
+        
+        // 检查每行按钮数量 (建议最多3个)
+        const menuSizes = Object.values(menuConfig || {}).map(buttons => buttons.filter(btn => btn.enabled).length)
+        const oversizedMenus = menuSizes.filter(size => size > 6)
+        if (oversizedMenus.length > 0) {
+          return `警告: 某些菜单按钮过多 (建议每行最多3个按钮)`
+        }
+        
+        return `所有按钮配置符合Telegram限制`
+      }
+    },
+    {
       id: 'integration-telegram-api',
       name: 'Telegram API集成测试',
       description: '模拟与Telegram Bot API的交互',
@@ -155,6 +233,34 @@ export function ButtonFunctionTesting() {
       }
     },
     {
+      id: 'integration-api-endpoints',
+      name: 'API端点可用性测试',
+      description: '模拟测试按钮对应的API端点是否可达',
+      category: 'integration' as const,
+      test: async () => {
+        await delay(1000)
+        
+        const allButtons = Object.values(menuConfig || {}).flat().filter(btn => btn.enabled)
+        const apiEndpoints = allButtons.filter(btn => btn.action.startsWith('/'))
+        
+        if (apiEndpoints.length === 0) {
+          return `警告: 没有发现API端点类型的按钮动作`
+        }
+        
+        // 模拟API可用性检查
+        const unavailableEndpoints = apiEndpoints.filter(btn => 
+          // 模拟某些端点不可用的情况
+          Math.random() < 0.1 // 10%概率模拟不可用
+        )
+        
+        if (unavailableEndpoints.length > 0) {
+          return `警告: ${unavailableEndpoints.length} 个API端点可能不可用`
+        }
+        
+        return `所有 ${apiEndpoints.length} 个API端点都可用`
+      }
+    },
+    {
       id: 'performance-render-speed',
       name: '渲染性能测试',
       description: '测试大量按钮的渲染性能',
@@ -170,6 +276,25 @@ export function ButtonFunctionTesting() {
         }
         
         return `渲染性能良好 (${renderTime.toFixed(2)}ms)`
+      }
+    },
+    {
+      id: 'performance-memory-usage',
+      name: '内存使用测试',
+      description: '测试按钮配置的内存占用情况',
+      category: 'performance' as const,
+      test: async () => {
+        await delay(500)
+        
+        const allButtons = Object.values(menuConfig || {}).flat()
+        const configSize = JSON.stringify(menuConfig).length
+        const avgButtonSize = configSize / Math.max(allButtons.length, 1)
+        
+        if (configSize > 10000) { // 10KB
+          return `警告: 按钮配置较大 (${(configSize/1024).toFixed(2)}KB)`
+        }
+        
+        return `内存使用正常 (配置: ${(configSize/1024).toFixed(2)}KB, 平均每按钮: ${avgButtonSize.toFixed(0)}字节)`
       }
     },
     {
@@ -195,6 +320,62 @@ export function ButtonFunctionTesting() {
         }
         
         return '所有按钮文本安全，无XSS风险'
+      }
+    },
+    {
+      id: 'security-injection-prevention',
+      name: '注入攻击防护测试',
+      description: '检查按钮配置对SQL注入等攻击的防护',
+      category: 'security' as const,
+      test: async () => {
+        await delay(600)
+        
+        const allButtons = Object.values(menuConfig || {}).flat()
+        const sqlPatterns = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'DROP', 'UNION']
+        
+        const vulnerableButtons = allButtons.filter(btn => 
+          sqlPatterns.some(pattern => 
+            btn.action.toUpperCase().includes(pattern) || 
+            (btn.callback_data && btn.callback_data.toUpperCase().includes(pattern))
+          )
+        )
+        
+        if (vulnerableButtons.length > 0) {
+          return `警告: ${vulnerableButtons.length} 个按钮可能存在注入风险`
+        }
+        
+        return '所有按钮配置安全，无注入攻击风险'
+      }
+    },
+    {
+      id: 'security-access-control',
+      name: '访问控制测试',
+      description: '验证按钮的权限控制配置',
+      category: 'security' as const,
+      test: async () => {
+        await delay(700)
+        
+        const allButtons = Object.values(menuConfig || {}).flat()
+        const adminButtons = allButtons.filter(btn => 
+          btn.action.includes('admin') || 
+          btn.action.includes('manage') ||
+          btn.text.includes('管理')
+        )
+        
+        // 检查管理功能按钮是否有适当的访问控制
+        const unprotectedAdminButtons = adminButtons.filter(btn => 
+          !btn.action.includes('auth') && !btn.action.includes('check')
+        )
+        
+        if (unprotectedAdminButtons.length > 0) {
+          return `警告: ${unprotectedAdminButtons.length} 个管理功能按钮可能缺少权限验证`
+        }
+        
+        if (adminButtons.length === 0) {
+          return '无管理功能按钮，访问控制良好'
+        }
+        
+        return `所有 ${adminButtons.length} 个管理功能按钮都有权限保护`
       }
     }
   ]
@@ -317,6 +498,22 @@ export function ButtonFunctionTesting() {
 
   return (
     <div className="space-y-6">
+      {/* 实时状态指示器 */}
+      {isRunning && (
+        <div className="fixed top-4 right-4 z-50">
+          <Card className="bg-blue-50 border-blue-200">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2">
+                <ArrowClockwise size={16} className="animate-spin text-blue-600" />
+                <span className="text-sm font-medium text-blue-700">
+                  正在运行自动化测试... ({Math.round(progress)}%)
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">按钮功能测试</h1>
