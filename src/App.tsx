@@ -18,15 +18,21 @@ import { ComprehensiveTestResults } from '@/components/ComprehensiveTestResults'
 import { ProductionSecurity } from '@/components/ProductionSecurity'
 import { BotButtonConfig } from '@/components/BotButtonConfig'
 import { ButtonFunctionTesting } from '@/components/ButtonFunctionTesting'
+import { GitHubRepositoryManager } from '@/components/GitHubRepositoryManager'
+import { OneClickSetupScript } from '@/components/OneClickSetupScript'
+import { GitHubPackageBuilder } from '@/components/GitHubPackageBuilder'
 import { cn } from '@/lib/utils'
 
-export type NavigationItem = 'dashboard' | 'bots' | 'products' | 'payments' | 'agents' | 'deploy' | 'security' | 'backend' | 'demo' | 'real-testing' | 'docker-testing' | 'comprehensive-testing' | 'test-results' | 'production-security' | 'bot-config' | 'button-testing'
+export type NavigationItem = 'dashboard' | 'bots' | 'products' | 'payments' | 'agents' | 'deploy' | 'security' | 'backend' | 'demo' | 'real-testing' | 'docker-testing' | 'comprehensive-testing' | 'test-results' | 'production-security' | 'bot-config' | 'button-testing' | 'github-repo' | 'one-click-setup' | 'package-builder'
 
 function App() {
-  const [currentView, setCurrentView] = useKV<NavigationItem>('current-view', 'button-testing')
+  const [currentView, setCurrentView] = useKV<NavigationItem>('current-view', 'package-builder')
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const navigationItems = [
+    { id: 'package-builder' as const, label: '一键打包脚本', icon: CloudArrowUp },
+    { id: 'github-repo' as const, label: 'GitHub 仓库管理', icon: CloudArrowUp },
+    { id: 'one-click-setup' as const, label: '一键配置脚本', icon: TestTube },
     { id: 'button-testing' as const, label: '按钮功能测试', icon: TestTube },
     { id: 'test-results' as const, label: '全部功能测试结果', icon: TestTube },
     { id: 'bot-config' as const, label: '机器人按钮配置', icon: Gear },
@@ -47,6 +53,12 @@ function App() {
 
   const renderCurrentView = () => {
     switch (currentView) {
+      case 'package-builder':
+        return <GitHubPackageBuilder />
+      case 'github-repo':
+        return <GitHubRepositoryManager />
+      case 'one-click-setup':
+        return <OneClickSetupScript />
       case 'button-testing':
         return <ButtonFunctionTesting />
       case 'test-results':
@@ -80,7 +92,7 @@ function App() {
       case 'production-security':
         return <ProductionSecurity />
       default:
-        return <ButtonFunctionTesting />
+        return <GitHubPackageBuilder />
     }
   }
 
