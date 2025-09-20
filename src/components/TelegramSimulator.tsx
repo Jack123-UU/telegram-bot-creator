@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { BotSetup } from '@/components/BotSetup'
 import { 
   Play, 
   Pause, 
@@ -19,7 +20,8 @@ import {
   Monitor,
   TestTube,
   Shield,
-  Lightning
+  Lightning,
+  Gear
 } from '@phosphor-icons/react'
 
 interface Message {
@@ -279,8 +281,12 @@ export function TelegramSimulator() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="demo" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+          <Tabs defaultValue="setup" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="setup" className="flex items-center gap-2">
+                <Gear size={16} />
+                Bot Setup
+              </TabsTrigger>
               <TabsTrigger value="demo" className="flex items-center gap-2">
                 <Monitor size={16} />
                 Telegram Demo
@@ -295,7 +301,24 @@ export function TelegramSimulator() {
               </TabsTrigger>
             </TabsList>
 
+            <TabsContent value="setup">
+              <BotSetup />
+            </TabsContent>
+
             <TabsContent value="demo" className="space-y-4">
+              {/* Bot Configuration Status */}
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <CheckCircle size={20} className="text-green-600" />
+                  <span className="font-semibold text-green-800">Bot Token Configured</span>
+                </div>
+                <div className="text-sm text-green-700">
+                  <div>Token: <code className="bg-green-100 px-2 py-1 rounded">8370071788:AAGrc3JKDs-lb_ITqZMAe8ufmQsB_3Qp5cA</code></div>
+                  <div>Status: <Badge variant="default" className="bg-green-100 text-green-800">Ready for Testing</Badge></div>
+                  <div>Environment: <Badge variant="outline">Development</Badge></div>
+                </div>
+              </div>
+              
               <div className="flex items-center gap-4">
                 <div className="flex gap-2">
                   <Button

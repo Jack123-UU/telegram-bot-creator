@@ -80,8 +80,18 @@ class UserVerification:
 # Bot configuration
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
-BACKEND_API_URL = os.getenv("BACKEND_API_URL", "http://localhost:8000")
-INTERNAL_API_TOKEN = os.getenv("INTERNAL_API_TOKEN", os.getenv("DEV_INTERNAL_TOKEN"))
+BACKEND_API_URL = os.getenv("API_BASE_URL", os.getenv("BACKEND_API_URL", "http://localhost:8000"))
+INTERNAL_API_TOKEN = os.getenv("API_INTERNAL_TOKEN", os.getenv("INTERNAL_API_TOKEN", "dev-internal-token-secure-123"))
+
+# Validate critical configuration
+if not BOT_TOKEN:
+    logger.error("BOT_TOKEN is required but not found in environment variables")
+    raise ValueError("BOT_TOKEN environment variable is required")
+
+logger.info("Bot configuration loaded", 
+           bot_token_length=len(BOT_TOKEN),
+           backend_url=BACKEND_API_URL,
+           redis_url=REDIS_URL)
 
 # Initialize Redis storage for FSM
 redis_client = redis.from_url(REDIS_URL)

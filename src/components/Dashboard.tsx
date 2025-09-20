@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ConfigurationSummary } from '@/components/ConfigurationSummary'
 import { 
   Lightning, 
   TrendUp, 
@@ -12,7 +13,8 @@ import {
   Warning,
   CheckCircle,
   Clock,
-  DeviceMobile
+  DeviceMobile,
+  Gear
 } from '@phosphor-icons/react'
 import { useKV } from '@github/spark/hooks'
 import { NavigationItem } from '@/App'
@@ -83,6 +85,22 @@ export function Dashboard({ onNavigate }: DashboardProps = {}) {
         <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
         <p className="text-muted-foreground">Welcome to your Telegram bot sales platform</p>
       </div>
+
+      {/* Bot Configuration Status */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Gear size={20} className="text-primary" />
+            Bot Configuration Status
+          </CardTitle>
+          <CardDescription>
+            Your test bot token has been configured and is ready for testing
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ConfigurationSummary />
+        </CardContent>
+      </Card>
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
