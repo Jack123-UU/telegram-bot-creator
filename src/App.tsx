@@ -21,15 +21,17 @@ import { ButtonFunctionTesting } from '@/components/ButtonFunctionTesting'
 import { GitHubRepositoryManager } from '@/components/GitHubRepositoryManager'
 import { OneClickSetupScript } from '@/components/OneClickSetupScript'
 import { GitHubPackageBuilder } from '@/components/GitHubPackageBuilder'
+import { ProjectImporter } from '@/components/ProjectImporter'
 import { cn } from '@/lib/utils'
 
-export type NavigationItem = 'dashboard' | 'bots' | 'products' | 'payments' | 'agents' | 'deploy' | 'security' | 'backend' | 'demo' | 'real-testing' | 'docker-testing' | 'comprehensive-testing' | 'test-results' | 'production-security' | 'bot-config' | 'button-testing' | 'github-repo' | 'one-click-setup' | 'package-builder'
+export type NavigationItem = 'dashboard' | 'bots' | 'products' | 'payments' | 'agents' | 'deploy' | 'security' | 'backend' | 'demo' | 'real-testing' | 'docker-testing' | 'comprehensive-testing' | 'test-results' | 'production-security' | 'bot-config' | 'button-testing' | 'github-repo' | 'one-click-setup' | 'package-builder' | 'project-importer'
 
 function App() {
-  const [currentView, setCurrentView] = useKV<NavigationItem>('current-view', 'package-builder')
+  const [currentView, setCurrentView] = useKV<NavigationItem>('current-view', 'project-importer')
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const navigationItems = [
+    { id: 'project-importer' as const, label: '🚀 项目导入器', icon: CloudArrowUp },
     { id: 'package-builder' as const, label: '一键打包脚本', icon: CloudArrowUp },
     { id: 'github-repo' as const, label: 'GitHub 仓库管理', icon: CloudArrowUp },
     { id: 'one-click-setup' as const, label: '一键配置脚本', icon: TestTube },
@@ -53,6 +55,8 @@ function App() {
 
   const renderCurrentView = () => {
     switch (currentView) {
+      case 'project-importer':
+        return <ProjectImporter />
       case 'package-builder':
         return <GitHubPackageBuilder />
       case 'github-repo':
@@ -92,7 +96,7 @@ function App() {
       case 'production-security':
         return <ProductionSecurity />
       default:
-        return <GitHubPackageBuilder />
+        return <ProjectImporter />
     }
   }
 
