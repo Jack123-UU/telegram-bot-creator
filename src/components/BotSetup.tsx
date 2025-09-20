@@ -34,7 +34,7 @@ export function BotSetup() {
     { name: 'Payment Monitor', status: 'stopped', description: 'TRON payment monitoring' }
   ])
 
-  const botToken = '8370071788:AAGrc3JKDs-lb_ITqZMAe8ufmQsB_3Qp5cA'
+  const botToken = '8424135673:AAE-QYrIeZ5kgI3VRu1C5gd23CYnQsmjUmk'
   const [isStarting, setIsStarting] = useState(false)
 
   const startBot = async () => {

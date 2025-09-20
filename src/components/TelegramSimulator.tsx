@@ -313,7 +313,7 @@ export function TelegramSimulator() {
                   <span className="font-semibold text-green-800">Bot Token Configured</span>
                 </div>
                 <div className="text-sm text-green-700">
-                  <div>Token: <code className="bg-green-100 px-2 py-1 rounded">8370071788:AAGrc3JKDs-lb_ITqZMAe8ufmQsB_3Qp5cA</code></div>
+                  <div>Token: <code className="bg-green-100 px-2 py-1 rounded">8424135673:AAE-QYrIeZ5kgI3VRu1C5gd23CYnQsmjUmk</code></div>
                   <div>Status: <Badge variant="default" className="bg-green-100 text-green-800">Ready for Testing</Badge></div>
                   <div>Environment: <Badge variant="outline">Development</Badge></div>
                 </div>

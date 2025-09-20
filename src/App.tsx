@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Button } from '@/components/ui/button'
-import { Robot, ChartBar, Users, CloudArrowUp, List, Package, Wallet, Shield, Lightning, DeviceMobile } from '@phosphor-icons/react'
+import { Robot, ChartBar, Users, CloudArrowUp, List, Package, Wallet, Shield, Lightning, DeviceMobile, TestTube } from '@phosphor-icons/react'
 import { Dashboard } from '@/components/Dashboard'
 import { BotManager } from '@/components/BotManager'
 import { ProductManager } from '@/components/ProductManager'
@@ -11,17 +11,21 @@ import { DeploymentCenter } from '@/components/DeploymentCenter'
 import { SecurityCenter } from '@/components/SecurityCenter'
 import { BackendIntegration } from '@/components/BackendIntegration'
 import { TelegramSimulator } from '@/components/TelegramSimulator'
+import { RealTelegramTesting } from '@/components/RealTelegramTesting'
+import { ComprehensiveTesting } from '@/components/ComprehensiveTesting'
 import { ProductionSecurity } from '@/components/ProductionSecurity'
 import { cn } from '@/lib/utils'
 
-export type NavigationItem = 'dashboard' | 'bots' | 'products' | 'payments' | 'agents' | 'deploy' | 'security' | 'backend' | 'demo' | 'production-security'
+export type NavigationItem = 'dashboard' | 'bots' | 'products' | 'payments' | 'agents' | 'deploy' | 'security' | 'backend' | 'demo' | 'real-testing' | 'comprehensive-testing' | 'production-security'
 
 function App() {
-  const [currentView, setCurrentView] = useKV<NavigationItem>('current-view', 'demo')
+  const [currentView, setCurrentView] = useKV<NavigationItem>('current-view', 'comprehensive-testing')
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const navigationItems = [
     { id: 'dashboard' as const, label: 'Dashboard', icon: ChartBar },
+    { id: 'comprehensive-testing' as const, label: '完整系统测试', icon: TestTube },
+    { id: 'real-testing' as const, label: '真实Telegram测试', icon: DeviceMobile },
     { id: 'demo' as const, label: 'Telegram演示', icon: DeviceMobile },
     { id: 'bots' as const, label: 'Bot Manager', icon: Robot },
     { id: 'products' as const, label: 'Products', icon: Package },
@@ -37,6 +41,10 @@ function App() {
     switch (currentView) {
       case 'dashboard':
         return <Dashboard onNavigate={setCurrentView} />
+      case 'comprehensive-testing':
+        return <ComprehensiveTesting />
+      case 'real-testing':
+        return <RealTelegramTesting />
       case 'demo':
         return <TelegramSimulator />
       case 'bots':
@@ -56,7 +64,7 @@ function App() {
       case 'production-security':
         return <ProductionSecurity />
       default:
-        return <Dashboard onNavigate={setCurrentView} />
+        return <ComprehensiveTesting />
     }
   }
 
