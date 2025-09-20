@@ -473,7 +473,7 @@ export function ButtonFunctionTesting() {
       },
       testResults: (testResults || []).map(result => ({
         ...result,
-        timestamp: result.timestamp.toISOString()
+        timestamp: new Date(result.timestamp).toISOString()
       }))
     }
 
@@ -698,7 +698,7 @@ export function ButtonFunctionTesting() {
                         {result.duration && (
                           <div>{result.duration.toFixed(2)}ms</div>
                         )}
-                        <div>{result.timestamp.toLocaleTimeString()}</div>
+                        <div>{new Date(result.timestamp).toLocaleTimeString()}</div>
                       </div>
                     </div>
                   </CardContent>
