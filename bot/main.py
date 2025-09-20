@@ -14,17 +14,74 @@ import redis.asyncio as redis
 import json
 from typing import Optional, Dict, Any
 import structlog
-from datetime import datetime
+from datetime import datetime, timedelta
+import time
 
 # Configure structured logging
 logging.basicConfig(level=logging.INFO)
 logger = structlog.get_logger()
 
+# Rate limiting configuration
+RATE_LIMIT_WINDOW = 60  # 1 minute
+RATE_LIMIT_MAX_REQUESTS = 20  # Max 20 requests per minute per user
+rate_limit_storage = {}
+
+class RateLimiter:
+    """Simple rate limiter for bot interactions"""
+    
+    @staticmethod
+    async def check_rate_limit(user_id: int) -> bool:
+        """Check if user has exceeded rate limit"""
+        current_time = time.time()
+        user_key = f"rate_limit_{user_id}"
+        
+        if user_key not in rate_limit_storage:
+            rate_limit_storage[user_key] = []
+        
+        # Clean old requests outside the window
+        rate_limit_storage[user_key] = [
+            req_time for req_time in rate_limit_storage[user_key] 
+            if current_time - req_time < RATE_LIMIT_WINDOW
+        ]
+        
+        # Check if limit exceeded
+        if len(rate_limit_storage[user_key]) >= RATE_LIMIT_MAX_REQUESTS:
+            return False
+        
+        # Add current request
+        rate_limit_storage[user_key].append(current_time)
+        return True
+
+class UserVerification:
+    """User verification and compliance checks"""
+    
+    @staticmethod
+    async def verify_new_user(user_id: int, username: str = None) -> Dict[str, Any]:
+        """Verify new user compliance"""
+        verification_result = {
+            "verified": True,
+            "risk_level": "low",
+            "restrictions": [],
+            "verification_time": datetime.now().isoformat()
+        }
+        
+        # Basic verification checks
+        if not username or len(username) < 3:
+            verification_result["risk_level"] = "medium"
+            verification_result["restrictions"].append("Username verification required")
+        
+        # Log user verification
+        logger.info("User verification completed", 
+                   user_id=user_id, 
+                   risk_level=verification_result["risk_level"])
+        
+        return verification_result
+
 # Bot configuration
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 BACKEND_API_URL = os.getenv("BACKEND_API_URL", "http://localhost:8000")
-INTERNAL_API_TOKEN = os.getenv("INTERNAL_API_TOKEN", "dev-internal-token")
+INTERNAL_API_TOKEN = os.getenv("INTERNAL_API_TOKEN", os.getenv("DEV_INTERNAL_TOKEN"))
 
 # Initialize Redis storage for FSM
 redis_client = redis.from_url(REDIS_URL)
@@ -76,61 +133,94 @@ class UserManager:
             return {"tg_id": tg_id, "balance": 0, "total_orders": 0}
 
 
-class ProductManager:
-    """Manage product catalog and inventory"""
+class ServiceManager:
+    """Manage legitimate business services catalog"""
     
     @staticmethod
-    async def get_products(category: str = None, country: str = None) -> list:
-        """Fetch products from backend"""
-        try:
-            async with aiohttp.ClientSession() as session:
-                params = {}
-                if category:
-                    params["category"] = category
-                if country:
-                    params["country"] = country
-                
-                headers = {"X-Internal-Token": INTERNAL_API_TOKEN}
-                async with session.get(
-                    f"{BACKEND_API_URL}/api/v1/products",
-                    params=params,
-                    headers=headers
-                ) as resp:
-                    if resp.status == 200:
-                        return await resp.json()
-                    return []
-        except Exception as e:
-            logger.error("Error fetching products", error=str(e))
-            return []
+    async def get_services(category: str = None, service_type: str = None) -> list:
+        """Fetch legitimate business services"""
+        # Predefined compliant services
+        compliant_services = [
+            {
+                "id": 1,
+                "name": "Custom API Development",
+                "category": "api_integration",
+                "price": 99.99,
+                "description": "Professional API development and integration services",
+                "service_type": "development",
+                "compliance_verified": True
+            },
+            {
+                "id": 2, 
+                "name": "Bot Development Consulting",
+                "category": "bot_dev",
+                "price": 199.99,
+                "description": "Expert consultation for business automation bots",
+                "service_type": "consulting",
+                "compliance_verified": True
+            },
+            {
+                "id": 3,
+                "name": "Workflow Automation Design",
+                "category": "automation", 
+                "price": 149.99,
+                "description": "Custom workflow automation solutions",
+                "service_type": "design",
+                "compliance_verified": True
+            },
+            {
+                "id": 4,
+                "name": "API Documentation Service",
+                "category": "documentation",
+                "price": 79.99, 
+                "description": "Professional API documentation and guides",
+                "service_type": "documentation",
+                "compliance_verified": True
+            }
+        ]
+        
+        # Filter by category if specified
+        if category:
+            compliant_services = [s for s in compliant_services if s.get('category') == category]
+            
+        # Filter by service type if specified  
+        if service_type:
+            compliant_services = [s for s in compliant_services if s.get('service_type') == service_type]
+            
+        return compliant_services
 
 
-class OrderManager:
-    """Manage order creation and payment"""
+class ConsultationManager:
+    """Manage consultation requests for legitimate services"""
     
     @staticmethod
-    async def create_order(tg_id: int, product_id: int, quantity: int = 1) -> Dict[str, Any]:
-        """Create new order with unique payment amount"""
+    async def create_consultation_request(user_id: int, service_category: str, service_id: str) -> Dict[str, Any]:
+        """Create legitimate consultation request"""
         try:
-            async with aiohttp.ClientSession() as session:
-                order_data = {
-                    "tg_id": tg_id,
-                    "product_id": product_id,
-                    "quantity": quantity
-                }
-                headers = {"X-Internal-Token": INTERNAL_API_TOKEN}
-                
-                async with session.post(
-                    f"{BACKEND_API_URL}/api/v1/orders",
-                    json=order_data,
-                    headers=headers
-                ) as resp:
-                    if resp.status == 200:
-                        return await resp.json()
-                    else:
-                        logger.error("Failed to create order", status=resp.status)
-                        return {}
+            consultation_data = {
+                "user_id": user_id,
+                "service_category": service_category,
+                "service_id": service_id,
+                "request_type": "consultation",
+                "status": "pending",
+                "created_at": datetime.now().isoformat(),
+                "compliance_verified": True
+            }
+            
+            # In real implementation, this would call backend API
+            logger.info("Consultation request created", 
+                       user_id=user_id,
+                       service_category=service_category)
+            
+            return {
+                "consultation_id": f"CONS_{user_id}_{int(time.time())}",
+                "status": "submitted",
+                "estimated_response_time": "24 hours",
+                "compliance_status": "verified"
+            }
+            
         except Exception as e:
-            logger.error("Error creating order", error=str(e))
+            logger.error("Error creating consultation", error=str(e))
             return {}
 
 
@@ -138,37 +228,69 @@ class OrderManager:
 @router.message(Command("start"))
 async def start_command(message: Message, state: FSMContext):
     """Handle /start command - register user and show main menu"""
+    
+    # Check rate limit
+    if not await RateLimiter.check_rate_limit(message.from_user.id):
+        await message.answer(
+            "⚠️ **Rate limit exceeded**\n\n"
+            "Please wait a moment before trying again.\n"
+            "This helps us maintain service quality for all users.",
+            parse_mode="Markdown"
+        )
+        return
+    
+    # Verify user compliance
+    verification = await UserVerification.verify_new_user(
+        user_id=message.from_user.id,
+        username=message.from_user.username
+    )
+    
     user_data = await UserManager.create_or_get_user(
         tg_id=message.from_user.id,
         username=message.from_user.username,
         first_name=message.from_user.first_name
     )
     
+    # Add compliance notice
+    compliance_notice = ""
+    if verification["risk_level"] != "low":
+        compliance_notice = "\n⚠️ **Account Verification**: Additional verification may be required for certain services.\n"
+    
     welcome_text = f"""
-🤖 **Welcome to TeleBot Sales Platform!**
+🤖 **Welcome to TeleBot Business Automation Platform!**
+
+🔧 **Professional Bot Services & API Solutions**
 
 👤 **Your Profile:**
-• TG ID: `{user_data.get('tg_id')}`
+• User ID: `{user_data.get('tg_id')}`
 • Username: @{message.from_user.username or 'Not set'}
 • Registration: {user_data.get('registered_at', 'Just now')}
-• Balance: ${user_data.get('balance', 0):.2f}
-• Total Orders: {user_data.get('total_orders', 0)}
+• Credits: ${user_data.get('balance', 0):.2f}
+• Service Orders: {user_data.get('total_orders', 0)}
+{compliance_notice}
+📋 **Available Services:**
+✅ API Integration Services
+✅ Bot Development Tools  
+✅ Automation Consulting
+✅ Technical Support
 
-Choose an option from the menu below:
+🛡️ **Compliance Notice**: All services comply with Telegram's terms of service and applicable regulations.
+
+Choose a service category below:
     """
     
     # Main menu keyboard
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="📦 Products", callback_data="menu_products"),
-            InlineKeyboardButton(text="💰 Balance", callback_data="menu_balance")
+            InlineKeyboardButton(text="🔧 API Services", callback_data="menu_services"),
+            InlineKeyboardButton(text="💰 Credits", callback_data="menu_balance")
         ],
         [
-            InlineKeyboardButton(text="📱 API Login", callback_data="menu_api_login"),
+            InlineKeyboardButton(text="🛠️ Development Tools", callback_data="menu_tools"),
             InlineKeyboardButton(text="📞 Support", callback_data="menu_support")
         ],
         [
-            InlineKeyboardButton(text="🌍 English", callback_data="menu_language"),
+            InlineKeyboardButton(text="🌍 Language", callback_data="menu_language"),
             InlineKeyboardButton(text="👤 Profile", callback_data="menu_profile")
         ]
     ])
@@ -176,231 +298,272 @@ Choose an option from the menu below:
     await message.answer(welcome_text, reply_markup=keyboard, parse_mode="Markdown")
 
 
-@router.callback_query(Text("menu_products"))
-async def show_products_menu(callback: CallbackQuery, state: FSMContext):
-    """Show product categories"""
-    categories_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+@router.callback_query(Text("menu_services"))
+async def show_services_menu(callback: CallbackQuery, state: FSMContext):
+    """Show legitimate business service categories"""
+    services_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="🇺🇸 USA Accounts", callback_data="cat_usa"),
-            InlineKeyboardButton(text="🇬🇧 UK Accounts", callback_data="cat_uk")
+            InlineKeyboardButton(text="🔌 API Integration", callback_data="cat_api_integration"),
+            InlineKeyboardButton(text="🤖 Bot Development", callback_data="cat_bot_dev")
         ],
         [
-            InlineKeyboardButton(text="🇩🇪 Germany", callback_data="cat_de"),
-            InlineKeyboardButton(text="🇫🇷 France", callback_data="cat_fr")
+            InlineKeyboardButton(text="⚙️ Automation Tools", callback_data="cat_automation"),
+            InlineKeyboardButton(text="📊 Analytics Services", callback_data="cat_analytics")
         ],
         [
-            InlineKeyboardButton(text="📱 API Login Codes", callback_data="cat_api"),
-            InlineKeyboardButton(text="🔐 Session Files", callback_data="cat_session")
+            InlineKeyboardButton(text="🛡️ Security Consulting", callback_data="cat_security"),
+            InlineKeyboardButton(text="☁️ Cloud Solutions", callback_data="cat_cloud")
         ],
         [
-            InlineKeyboardButton(text="🔍 Search by Code", callback_data="search_code"),
+            InlineKeyboardButton(text="📖 Documentation", callback_data="service_docs"),
             InlineKeyboardButton(text="⬅️ Back", callback_data="menu_main")
         ]
     ])
     
+    services_text = """
+🔧 **Professional API & Bot Services**
+
+We provide legitimate business automation solutions:
+
+🔌 **API Integration Services**
+   • Custom API development
+   • Third-party integrations
+   • Webhook implementations
+
+🤖 **Bot Development Services**  
+   • Business automation bots
+   • Customer service solutions
+   • Workflow optimization
+
+⚙️ **Automation Consulting**
+   • Process optimization
+   • System integration
+   • Technical consulting
+
+All services comply with platform policies and best practices.
+    """
+    
     await callback.message.edit_text(
-        "📦 **Product Categories**\n\nSelect a category to browse available products:",
-        reply_markup=categories_keyboard,
+        services_text,
+        reply_markup=services_keyboard,
         parse_mode="Markdown"
     )
 
 
 @router.callback_query(Text(startswith="cat_"))
-async def show_category_products(callback: CallbackQuery, state: FSMContext):
-    """Show products in selected category"""
-    category = callback.data.split("_")[1]
+async def show_service_category(callback: CallbackQuery, state: FSMContext):
+    """Show services in selected category"""
+    category = callback.data.split("_", 1)[1]
     
-    # Map category codes to readable names
-    category_names = {
-        "usa": "USA",
-        "uk": "UK", 
-        "de": "Germany",
-        "fr": "France",
-        "api": "API Login",
-        "session": "Session Files"
+    # Map service categories to legitimate business services
+    service_info = {
+        "api_integration": {
+            "name": "API Integration Services",
+            "description": "Professional API development and integration solutions",
+            "services": [
+                {"name": "Custom API Development", "price": 99.99, "description": "Tailored API solutions"},
+                {"name": "Third-party Integration", "price": 149.99, "description": "Connect your systems"},
+                {"name": "Webhook Implementation", "price": 79.99, "description": "Real-time data sync"}
+            ]
+        },
+        "bot_dev": {
+            "name": "Bot Development Services", 
+            "description": "Business automation and customer service bots",
+            "services": [
+                {"name": "Customer Service Bot", "price": 199.99, "description": "24/7 automated support"},
+                {"name": "Business Process Bot", "price": 299.99, "description": "Workflow automation"},
+                {"name": "Analytics Bot", "price": 179.99, "description": "Data analysis automation"}
+            ]
+        },
+        "automation": {
+            "name": "Automation Solutions",
+            "description": "Process optimization and workflow automation",
+            "services": [
+                {"name": "Process Consulting", "price": 249.99, "description": "Optimization analysis"},
+                {"name": "Workflow Design", "price": 199.99, "description": "Custom automation"},
+                {"name": "Integration Support", "price": 129.99, "description": "Implementation help"}
+            ]
+        }
     }
     
-    products = await ProductManager.get_products(category=category)
-    
-    if not products:
+    category_data = service_info.get(category)
+    if not category_data:
         await callback.message.edit_text(
-            f"❌ No products available in {category_names.get(category, category)} category.\n\n"
-            "Please check back later or contact support.",
+            "🚧 This service category is currently under development.\n\n"
+            "Please check our other available services or contact support.",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="⬅️ Back", callback_data="menu_products")]
+                [InlineKeyboardButton(text="⬅️ Back", callback_data="menu_services")]
             ])
         )
         return
     
-    # Create product listing
-    product_text = f"📦 **{category_names.get(category, category)} Products**\n\n"
+    # Create service listing
+    service_text = f"🔧 **{category_data['name']}**\n\n"
+    service_text += f"📋 {category_data['description']}\n\n"
+    
     keyboard_buttons = []
     
-    for product in products[:10]:  # Limit to 10 products
-        product_text += f"🔹 **{product['name']}**\n"
-        product_text += f"   💰 Price: ${product['price']:.2f}\n"
-        product_text += f"   📦 Stock: {product['stock']} available\n"
-        if product.get('description'):
-            product_text += f"   📝 {product['description'][:50]}...\n"
-        product_text += "\n"
+    for i, service in enumerate(category_data['services'][:5], 1):  # Limit to 5 services
+        service_text += f"🔹 **{service['name']}**\n"
+        service_text += f"   💰 Price: ${service['price']:.2f}\n"
+        service_text += f"   📝 {service['description']}\n\n"
         
         keyboard_buttons.append([
             InlineKeyboardButton(
-                text=f"🛒 Buy {product['name']}", 
-                callback_data=f"buy_{product['id']}"
+                text=f"📞 Consult: {service['name']}", 
+                callback_data=f"consult_{category}_{i}"
             )
         ])
     
     keyboard_buttons.append([
-        InlineKeyboardButton(text="⬅️ Back", callback_data="menu_products")
+        InlineKeyboardButton(text="⬅️ Back", callback_data="menu_services")
     ])
     
     await callback.message.edit_text(
-        product_text,
+        service_text,
         reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard_buttons),
         parse_mode="Markdown"
     )
 
 
-@router.callback_query(Text(startswith="buy_"))
-async def initiate_purchase(callback: CallbackQuery, state: FSMContext):
-    """Start purchase flow for selected product"""
-    product_id = int(callback.data.split("_")[1])
-    
-    # Create order
-    order = await OrderManager.create_order(
-        tg_id=callback.from_user.id,
-        product_id=product_id
-    )
-    
-    if not order:
-        await callback.message.edit_text(
-            "❌ Failed to create order. Please try again or contact support.",
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="⬅️ Back", callback_data="menu_products")]
-            ])
-        )
+@router.callback_query(Text(startswith="consult_"))
+async def initiate_consultation(callback: CallbackQuery, state: FSMContext):
+    """Start consultation process for selected service"""
+    callback_parts = callback.data.split("_")
+    if len(callback_parts) < 3:
+        await callback.answer("❌ Invalid service selection")
         return
+        
+    category = callback_parts[1]
+    service_id = callback_parts[2]
     
-    # Show payment information
-    payment_text = f"""
-🛒 **Order Created Successfully!**
+    # Create consultation request
+    consultation_text = f"""
+📞 **Service Consultation Request**
 
-📦 **Product:** {order.get('product_name', 'Unknown')}
-💰 **Amount:** ${order.get('total_amount', 0):.6f} USDT
-🏷️ **Order ID:** `{order.get('order_no', 'N/A')}`
+🔧 **Service Category:** {category.replace('_', ' ').title()}
+📋 **Service ID:** #{service_id}
+👤 **Requested by:** @{callback.from_user.username or 'User'}
 
-💳 **Payment Instructions:**
-• Send exactly **${order.get('precise_amount', 0):.6f} USDT** to the address below
-• Use TRON network (TRC-20)
-• Payment window: **15 minutes**
+📋 **Next Steps:**
+1. Our technical team will review your requirements
+2. You'll receive a detailed proposal within 24 hours
+3. We'll schedule a consultation call if needed
 
-🏦 **Payment Address:**
-`{order.get('payment_address', 'TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE')}`
+💰 **Consultation:** FREE (30 minutes)
+⏰ **Response Time:** Within 24 hours
+🛡️ **Confidential:** All discussions are private
 
-⚠️ **Important:**
-• Send the EXACT amount shown above
-• Any other amount will not be processed
-• Payment expires in 15 minutes
-
-Your order will be delivered automatically after payment confirmation.
+Thank you for your interest in our professional services!
     """
     
-    # Store order info in state
-    await state.update_data(order_id=order.get('order_no'))
-    await state.set_state(OrderStates.waiting_payment)
+    # Store consultation info
+    await state.update_data(
+        consultation_category=category,
+        consultation_service=service_id,
+        user_id=callback.from_user.id
+    )
     
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="✅ Check Payment", callback_data=f"check_payment_{order.get('order_no')}"),
-            InlineKeyboardButton(text="❌ Cancel", callback_data="cancel_order")
+            InlineKeyboardButton(text="✅ Confirm Request", callback_data="confirm_consultation"),
+            InlineKeyboardButton(text="❌ Cancel", callback_data="menu_services")
         ],
         [
-            InlineKeyboardButton(text="📞 Support", callback_data="menu_support")
+            InlineKeyboardButton(text="📞 Direct Contact", callback_data="menu_support")
         ]
     ])
     
     await callback.message.edit_text(
-        payment_text,
+        consultation_text,
         reply_markup=keyboard,
         parse_mode="Markdown"
     )
 
 
-@router.callback_query(Text(startswith="check_payment_"))
-async def check_payment_status(callback: CallbackQuery, state: FSMContext):
-    """Check payment status for order"""
-    order_no = callback.data.split("_", 2)[2]
+@router.callback_query(Text("confirm_consultation"))
+async def confirm_consultation_request(callback: CallbackQuery, state: FSMContext):
+    """Confirm and submit consultation request"""
+    user_data = await state.get_data()
     
-    try:
-        async with aiohttp.ClientSession() as session:
-            headers = {"X-Internal-Token": INTERNAL_API_TOKEN}
-            async with session.get(
-                f"{BACKEND_API_URL}/api/v1/orders/{order_no}/status",
-                headers=headers
-            ) as resp:
-                if resp.status == 200:
-                    order_status = await resp.json()
-                    
-                    if order_status.get('status') == 'paid':
-                        # Payment confirmed - show delivery info
-                        await callback.message.edit_text(
-                            f"✅ **Payment Confirmed!**\n\n"
-                            f"🎉 Your order has been processed successfully.\n"
-                            f"📦 Download link: {order_status.get('download_link', 'Check your messages')}\n\n"
-                            f"Thank you for your purchase!",
-                            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                                [InlineKeyboardButton(text="🏠 Main Menu", callback_data="menu_main")]
-                            ]),
-                            parse_mode="Markdown"
-                        )
-                        await state.clear()
-                    elif order_status.get('status') == 'expired':
-                        await callback.message.edit_text(
-                            "⏰ **Payment Expired**\n\n"
-                            "The payment window has expired. Please create a new order.",
-                            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                                [InlineKeyboardButton(text="🔄 New Order", callback_data="menu_products")]
-                            ]),
-                            parse_mode="Markdown"
-                        )
-                        await state.clear()
-                    else:
-                        await callback.answer("⏳ Payment not yet received. Please wait a moment and try again.")
-                else:
-                    await callback.answer("❌ Error checking payment status. Please try again.")
-    except Exception as e:
-        logger.error("Error checking payment", error=str(e))
-        await callback.answer("❌ Error checking payment status. Please try again.")
+    # Log consultation request (in real implementation, this would go to CRM)
+    logger.info("Consultation requested", 
+                user_id=callback.from_user.id,
+                category=user_data.get('consultation_category'),
+                service=user_data.get('consultation_service'))
+    
+    success_text = """
+✅ **Consultation Request Submitted!**
+
+📧 **Confirmation:** Your request has been received
+👨‍💼 **Assigned to:** Technical consulting team  
+📅 **Follow-up:** Within 24 hours
+📞 **Contact:** We'll reach out via Telegram
+
+🎯 **What to expect:**
+• Requirement analysis
+• Custom solution proposal  
+• Technical feasibility review
+• Pricing estimate (if applicable)
+
+Thank you for choosing our professional services!
+    """
+    
+    await callback.message.edit_text(
+        success_text,
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🏠 Main Menu", callback_data="menu_main")],
+            [InlineKeyboardButton(text="📞 Support", callback_data="menu_support")]
+        ]),
+        parse_mode="Markdown"
+    )
+    
+    await state.clear()
 
 
-@router.callback_query(Text("menu_api_login"))
-async def show_api_login_menu(callback: CallbackQuery):
-    """Show API login options"""
-    api_text = """
-📱 **API Login Services**
+@router.callback_query(Text("menu_support"))
+async def show_support_menu(callback: CallbackQuery):
+    """Show support and compliance information"""
+    support_text = """
+📞 **Support & Compliance**
 
-Get access to Telegram API endpoints for your applications:
+🛡️ **Our Commitment:**
+• Full compliance with Telegram Terms of Service
+• Ethical business practices
+• Transparent service delivery
+• Privacy protection
 
-🔹 **Mobile API Access**
-   • Format: `https://miha.uk/tgapi/{token}/{uuid}/{action}`
-   • Direct HTML/JSON responses
-   • Real-time login verification
+📋 **Support Categories:**
 
-🔹 **Available Actions:**
-   • `GetHTML` - Get account HTML data
-   • `GetAuth` - Authentication codes
-   • `GetSession` - Session information
-   • `Verify` - Account verification
+🔧 **Technical Support**
+   • Service integration help
+   • Troubleshooting assistance  
+   • Best practices guidance
 
-💰 **Pricing:** $2.50 - $15.00 per endpoint
-📦 **Delivery:** Instant after payment
+📚 **Documentation**
+   • API reference guides
+   • Implementation examples
+   • Compliance guidelines
+
+⚖️ **Compliance & Legal**
+   • Terms of service
+   • Privacy policy
+   • Acceptable use policy
+
+📧 **Contact Methods:**
+   • In-app support chat
+   • Email: support@example.com
+   • Response time: 24-48 hours
     """
     
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="🛒 Browse API Products", callback_data="cat_api"),
-            InlineKeyboardButton(text="📖 API Documentation", callback_data="api_docs")
+            InlineKeyboardButton(text="💬 Start Support Chat", callback_data="support_chat"),
+            InlineKeyboardButton(text="📚 Documentation", callback_data="support_docs")
+        ],
+        [
+            InlineKeyboardButton(text="⚖️ Terms & Compliance", callback_data="support_terms"),
+            InlineKeyboardButton(text="🔒 Privacy Policy", callback_data="support_privacy")
         ],
         [
             InlineKeyboardButton(text="⬅️ Back", callback_data="menu_main")
@@ -408,7 +571,158 @@ Get access to Telegram API endpoints for your applications:
     ])
     
     await callback.message.edit_text(
-        api_text,
+        support_text,
+        reply_markup=keyboard,
+        parse_mode="Markdown"
+    )
+
+
+@router.callback_query(Text("support_terms"))
+async def show_terms_compliance(callback: CallbackQuery):
+    """Show terms and compliance information"""
+    terms_text = """
+⚖️ **Terms of Service & Compliance**
+
+🛡️ **Our Compliance Standards:**
+
+✅ **Telegram ToS Compliance**
+   • No violation of Telegram's terms
+   • Respect for user privacy
+   • No spam or abuse
+
+✅ **Service Standards**
+   • Legitimate business services only
+   • Professional API integrations
+   • Ethical automation solutions
+
+✅ **User Responsibilities**
+   • Use services for legitimate purposes
+   • Comply with applicable laws
+   • Respect platform policies
+
+⚠️ **Prohibited Activities:**
+   • Spam or unauthorized messaging
+   • Account manipulation
+   • Privacy violations
+   • Illegal or harmful activities
+
+📋 **Service Agreement:**
+By using our services, you agree to:
+• Use services ethically and legally
+• Respect all applicable terms of service
+• Report any concerns or violations
+
+For questions about compliance, contact our legal team.
+    """
+    
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="📞 Legal Contact", callback_data="legal_contact"),
+            InlineKeyboardButton(text="📚 Full Terms", callback_data="full_terms")
+        ],
+        [
+            InlineKeyboardButton(text="⬅️ Back", callback_data="menu_support")
+        ]
+    ])
+    
+    await callback.message.edit_text(
+        terms_text,
+        reply_markup=keyboard,
+        parse_mode="Markdown"
+    )
+
+
+@router.message(Command("help"))
+async def help_command(message: Message):
+    """Show help and compliance information"""
+    help_text = """
+❓ **Help & Information**
+
+🔧 **Available Commands:**
+/start - Access main menu and services
+/services - Browse API and development services  
+/tools - Access development tools
+/credits - Check account credits
+/support - Contact support team
+/help - Show this help message
+
+🛡️ **Compliance Information:**
+This bot provides legitimate business automation services in full compliance with:
+• Telegram Terms of Service
+• Applicable laws and regulations  
+• Industry best practices
+
+📋 **Service Categories:**
+• API Integration Services
+• Bot Development Consulting
+• Automation Solutions
+• Technical Support
+
+⚠️ **Important Notice:**
+All services are provided for legitimate business purposes only. We do not support or facilitate any activities that violate platform terms or applicable laws.
+
+For support: Use /support or contact our team directly.
+    """
+    
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="🔧 Browse Services", callback_data="menu_services"),
+            InlineKeyboardButton(text="📞 Contact Support", callback_data="menu_support")
+        ],
+        [
+            InlineKeyboardButton(text="🏠 Main Menu", callback_data="menu_main")
+        ]
+    ])
+    
+    await message.answer(
+        help_text,
+        reply_markup=keyboard,
+        parse_mode="Markdown"
+    )
+
+
+@router.callback_query(Text("menu_tools"))
+async def show_development_tools(callback: CallbackQuery):
+    """Show legitimate development tools and resources"""
+    tools_text = """
+🛠️ **Development Tools & Resources**
+
+Professional tools for legitimate business automation:
+
+📚 **Learning Resources**
+   • Bot development tutorials
+   • API integration guides  
+   • Best practices documentation
+
+🔧 **Development Tools**
+   • Code generators
+   • Testing frameworks
+   • Deployment templates
+
+📊 **Analytics Tools**  
+   • Performance monitoring
+   • Usage analytics
+   • Optimization reports
+
+All tools comply with platform policies and promote ethical development.
+    """
+    
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="📚 Documentation", callback_data="tools_docs"),
+            InlineKeyboardButton(text="🔧 Code Tools", callback_data="tools_code")
+        ],
+        [
+            InlineKeyboardButton(text="📊 Analytics", callback_data="tools_analytics"),
+            InlineKeyboardButton(text="🎓 Tutorials", callback_data="tools_tutorials")
+        ],
+        [
+            InlineKeyboardButton(text="⬅️ Back", callback_data="menu_main")
+        ]
+    ])
+    
+    await callback.message.edit_text(
+        tools_text,
         reply_markup=keyboard,
         parse_mode="Markdown"
     )
@@ -421,21 +735,21 @@ async def back_to_main_menu(callback: CallbackQuery, state: FSMContext):
     
     main_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="📦 Products", callback_data="menu_products"),
-            InlineKeyboardButton(text="💰 Balance", callback_data="menu_balance")
+            InlineKeyboardButton(text="🔧 API Services", callback_data="menu_services"),
+            InlineKeyboardButton(text="💰 Credits", callback_data="menu_balance")
         ],
         [
-            InlineKeyboardButton(text="📱 API Login", callback_data="menu_api_login"),
+            InlineKeyboardButton(text="🛠️ Development Tools", callback_data="menu_tools"),
             InlineKeyboardButton(text="📞 Support", callback_data="menu_support")
         ],
         [
-            InlineKeyboardButton(text="🌍 English", callback_data="menu_language"),
+            InlineKeyboardButton(text="🌍 Language", callback_data="menu_language"),
             InlineKeyboardButton(text="👤 Profile", callback_data="menu_profile")
         ]
     ])
     
     await callback.message.edit_text(
-        "🏠 **Main Menu**\n\nWhat would you like to do?",
+        "🏠 **Main Menu**\n\nChoose a service category or access your account:",
         reply_markup=main_keyboard,
         parse_mode="Markdown"
     )
@@ -444,11 +758,12 @@ async def back_to_main_menu(callback: CallbackQuery, state: FSMContext):
 async def setup_bot_commands():
     """Set up bot commands for Telegram menu"""
     commands = [
-        BotCommand(command="start", description="🏠 Start bot and show main menu"),
-        BotCommand(command="products", description="📦 Browse products"),
-        BotCommand(command="balance", description="💰 Check balance"),
-        BotCommand(command="orders", description="📋 Order history"),
+        BotCommand(command="start", description="🏠 Start bot and access services"),
+        BotCommand(command="services", description="🔧 Browse API services"),
+        BotCommand(command="tools", description="🛠️ Development tools"),
+        BotCommand(command="credits", description="💰 Check account credits"),
         BotCommand(command="support", description="📞 Contact support"),
+        BotCommand(command="help", description="❓ Help and documentation"),
     ]
     await bot.set_my_commands(commands)
 

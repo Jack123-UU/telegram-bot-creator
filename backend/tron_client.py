@@ -288,7 +288,7 @@ class PaymentMonitor:
                 
                 headers = {
                     "Content-Type": "application/json",
-                    "X-Internal-Token": "dev-internal-token"  # In production, use proper auth
+                    "X-Internal-Token": os.getenv("INTERNAL_API_TOKEN") or os.getenv("DEV_INTERNAL_TOKEN")
                 }
                 
                 async with session.post(url, json=payload, headers=headers) as response:

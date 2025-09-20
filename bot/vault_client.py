@@ -61,9 +61,15 @@ class VaultClient:
             return self._get_dev_fallback(path)
     
     def _get_dev_fallback(self, path: str) -> Optional[str]:
-        """Get development fallback values"""
+        """Get development fallback values - USE ENVIRONMENT VARIABLES IN PRODUCTION"""
+        # In production, ensure all secrets come from Vault or secure environment variables
+        # These fallbacks should only be used in development with proper .env files
         fallbacks = {
-            "bot/token": "dev-bot-token-123456789",
-            "api/internal-token": "dev-internal-token-secure-123"
+            "bot/token": os.getenv("DEV_BOT_TOKEN"),
+            "api/internal-token": os.getenv("DEV_INTERNAL_TOKEN")
         }
-        return fallbacks.get(path)
+        fallback_value = fallbacks.get(path)
+        if not fallback_value:
+            logger.error(f"No fallback or environment variable found for {path}")
+            return None
+        return fallback_value

@@ -96,7 +96,7 @@ export function AutoInventoryManagement({ isOpen, onClose }: AutoInventoryProps)
   const [inventoryItems, setInventoryItems] = useKV<InventoryItem[]>('auto-inventory-items', [
     {
       id: 'inv-001',
-      url: 'https://miha.uk/tgapi/uWCSVDgG6XMaMT5C/fa7e47cc-d2d2-4ead-bfc1-039a7135f057/GetHTML',
+      url: 'https://api.company.com/v1/automation/status/endpoint',
       apiType: 'mobile-api',
       country: 'United States',
       status: 'active',

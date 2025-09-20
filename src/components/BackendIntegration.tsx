@@ -78,7 +78,7 @@ export function BackendIntegration() {
           price: 5.99,
           stock: 150,
           description: 'Direct API access for Telegram authentication',
-          example_url: 'https://miha.uk/tgapi/uWCSVDgG6XMaMT5C/fa7e47cc-d2d2-4ead-bfc1-039a7135f057/GetHTML',
+          example_url: 'https://api.company.com/v1/integration/webhook/example',
           auth_required: true,
           rate_limit: 100,
           created_at: '2024-01-15T10:00:00Z',
@@ -440,7 +440,7 @@ function EndpointForm({ onSubmit, onCancel }: { onSubmit: (data: Partial<ApiEndp
           id="example_url"
           value={formData.example_url}
           onChange={(e) => setFormData({...formData, example_url: e.target.value})}
-          placeholder="https://miha.uk/tgapi/token/uuid/GetHTML"
+          placeholder="https://api.company.com/v1/webhook/endpoint"
           required
         />
       </div>

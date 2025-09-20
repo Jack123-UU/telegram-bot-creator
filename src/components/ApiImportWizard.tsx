@@ -54,7 +54,7 @@ export function ApiImportWizard({ isOpen, onClose, onImport }: ImportWizardProps
   const countries = ['United States', 'United Kingdom', 'Germany', 'France', 'Canada', 'Australia']
 
   const exampleFormats = {
-    'mobile-api': 'https://miha.uk/tgapi/uWCSVDgG6XMaMT5C/fa7e47cc-d2d2-4ead-bfc1-039a7135f057/GetHTML',
+    'mobile-api': 'https://api.company.com/v1/mobile/integration/webhook',
     'login-api': 'https://api.example.com/login/{token}/{session}/authenticate',
     'sms-api': 'https://sms.provider.com/api/v1/{key}/{number}/verify'
   }

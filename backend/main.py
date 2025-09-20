@@ -33,10 +33,10 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Environment variables
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://telebot:dev_password_123@localhost:5432/telebot_sales")
+DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("DEV_DATABASE_URL") or "postgresql+asyncpg://telebot:changeme@localhost:5432/telebot_sales"
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 VAULT_ADDR = os.getenv("VAULT_ADDR", "http://localhost:8200")
-VAULT_TOKEN = os.getenv("VAULT_TOKEN", "dev-root-token")
+VAULT_TOKEN = os.getenv("VAULT_TOKEN") or os.getenv("DEV_VAULT_TOKEN")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 
 # Security

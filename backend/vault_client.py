@@ -41,21 +41,29 @@ class VaultClient:
             # Enable KV secrets engine if not already enabled
             await self._enable_kv_engine()
             
-            # Create development secrets
-            dev_secrets = {
-                "bot/token": "dev-bot-token-123456789",
-                "tron/private-key": "dev-private-key-0123456789abcdef",
-                "payment/tron-address": "TDevAddress123456789012345678901234",
-                "api/internal-token": "dev-internal-token-secure-123",
-                "encryption/aes-key": "dev-aes-key-32-bytes-0123456789ab",
-                "minio/access-key": "minioadmin",
-                "minio/secret-key": "minioadmin123"
-            }
-            
-            for path, value in dev_secrets.items():
-                await self.set_secret(path, value)
+            # In production: Do NOT initialize development secrets
+            # All secrets should be managed through secure external processes
+            # This function is for development environment setup only
+            if os.getenv("ENVIRONMENT") == "development" and os.getenv("INIT_DEV_SECRETS") == "true":
+                logger.warning("Initializing development secrets - DO NOT USE IN PRODUCTION")
+                # Dev secrets should come from environment variables, not hardcoded
+                dev_secrets = {
+                    "bot/token": os.getenv("DEV_BOT_TOKEN"),
+                    "tron/private-key": os.getenv("DEV_TRON_PRIVATE_KEY"), 
+                    "payment/tron-address": os.getenv("DEV_TRON_ADDRESS"),
+                    "api/internal-token": os.getenv("DEV_INTERNAL_TOKEN"),
+                    "encryption/aes-key": os.getenv("DEV_AES_KEY"),
+                    "minio/access-key": os.getenv("DEV_MINIO_ACCESS_KEY"),
+                    "minio/secret-key": os.getenv("DEV_MINIO_SECRET_KEY")
+                }
                 
-            logger.info("Development secrets initialized in Vault")
+                for path, value in dev_secrets.items():
+                    if value:  # Only set if environment variable exists
+                        await self.set_secret(path, value)
+                        
+                logger.info("Development secrets initialized from environment variables")
+            else:
+                logger.info("Skipping development secrets initialization (production mode or not requested)")
             
         except Exception as e:
             logger.error(f"Failed to initialize secrets: {e}")
@@ -222,18 +230,25 @@ class VaultClient:
             }
     
     def _get_dev_fallback(self, path: str) -> Optional[str]:
-        """Get development fallback values for secrets"""
+        """Get development fallback values for secrets - USE ENVIRONMENT VARIABLES IN PRODUCTION"""
+        # WARNING: These fallbacks should only be used in development
+        # In production, all secrets must come from Vault or secure environment variables
         dev_secrets = {
-            "bot/token": "dev-bot-token-123456789",
-            "tron/private-key": "dev-private-key-0123456789abcdef",
-            "payment/tron-address": "TDevAddress123456789012345678901234",
-            "api/internal-token": "dev-internal-token-secure-123",
-            "encryption/aes-key": "dev-aes-key-32-bytes-0123456789ab",
-            "minio/access-key": "minioadmin",
-            "minio/secret-key": "minioadmin123"
+            "bot/token": os.getenv("DEV_BOT_TOKEN"),
+            "tron/private-key": os.getenv("DEV_TRON_PRIVATE_KEY"),
+            "payment/tron-address": os.getenv("DEV_TRON_ADDRESS"),
+            "api/internal-token": os.getenv("DEV_INTERNAL_TOKEN"),
+            "encryption/aes-key": os.getenv("DEV_AES_KEY"),
+            "minio/access-key": os.getenv("DEV_MINIO_ACCESS_KEY"),
+            "minio/secret-key": os.getenv("DEV_MINIO_SECRET_KEY")
         }
         
-        return dev_secrets.get(path)
+        fallback_value = dev_secrets.get(path)
+        if not fallback_value:
+            logger.error(f"No fallback environment variable found for {path}")
+            logger.error("Ensure proper environment variables are set in .env file")
+            return None
+        return fallback_value
 
 class ExternalSecretsManager:
     """Manager for external secrets injection in Kubernetes"""

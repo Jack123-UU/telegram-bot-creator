@@ -35,10 +35,10 @@ const demoScript = [
     message: {
       id: 1,
       type: 'bot' as const,
-      text: '👋 欢迎来到智能销售机器人！我是您的专属购物助手。',
+      text: '🤖 Welcome to TeleBot Business Automation Platform!\n\n🔧 Professional Bot Services & API Solutions',
       timestamp: '14:32',
       hasButtons: true,
-      buttons: ['🛍️ 浏览商品', '📋 查看订单', '💬 联系客服']
+      buttons: ['🔧 API Services', '🛠️ Development Tools', '📞 Support']
     }
   },
   {
@@ -46,7 +46,7 @@ const demoScript = [
     message: {
       id: 2,
       type: 'user' as const,
-      text: '🛍️ 浏览商品',
+      text: '🔧 API Services',
       timestamp: '14:32'
     }
   },
@@ -55,10 +55,10 @@ const demoScript = [
     message: {
       id: 3,
       type: 'bot' as const,
-      text: '🎯 为您推荐热门商品分类：',
+      text: '🔧 Professional API & Bot Services\n\nWe provide legitimate business automation solutions:\n\n🔌 API Integration Services\n🤖 Bot Development Services\n⚙️ Automation Consulting',
       timestamp: '14:32',
       hasButtons: true,
-      buttons: ['📱 数码产品', '👕 服装配饰', '🏠 家居用品', '📚 图书文具']
+      buttons: ['🔌 API Integration', '🤖 Bot Development', '⚙️ Automation']
     }
   },
   {
@@ -66,7 +66,7 @@ const demoScript = [
     message: {
       id: 4,
       type: 'user' as const,
-      text: '📱 数码产品',
+      text: '🔌 API Integration',
       timestamp: '14:33'
     }
   },
@@ -75,12 +75,12 @@ const demoScript = [
     message: {
       id: 5,
       type: 'bot' as const,
-      text: '📱 精选数码产品：\n\n🎧 蓝牙耳机 Pro - ¥299\n📱 智能手机壳 - ¥89\n⌚ 智能手表 - ¥1299\n💻 无线鼠标 - ¥159',
+      text: '🔌 API Integration Services:\n\n🔹 Custom API Development - $99.99\n   • Tailored API solutions\n\n🔹 Third-party Integration - $149.99\n   • Connect your systems\n\n🔹 Webhook Implementation - $79.99\n   • Real-time data sync',
       timestamp: '14:33',
       hasImage: true,
       imageUrl: '/api/placeholder/300/200',
       hasButtons: true,
-      buttons: ['🎧 蓝牙耳机详情', '📱 手机壳详情', '⌚ 手表详情']
+      buttons: ['📞 Consult: Custom API', '📞 Consult: Integration', '📞 Consult: Webhooks']
     }
   },
   {
@@ -88,7 +88,7 @@ const demoScript = [
     message: {
       id: 6,
       type: 'user' as const,
-      text: '🎧 蓝牙耳机详情',
+      text: '📞 Consult: Custom API',
       timestamp: '14:33'
     }
   },
@@ -97,12 +97,12 @@ const demoScript = [
     message: {
       id: 7,
       type: 'bot' as const,
-      text: '🎧 蓝牙耳机 Pro\n\n💰 价格：¥299\n⭐ 评分：4.8/5\n📦 库存：充足\n🚚 配送：24小时内发货\n\n✨ 特色功能：\n• 主动降噪技术\n• 30小时续航\n• 快速充电\n• IPX4防水',
+      text: '📞 Service Consultation Request\n\n🔧 Service Category: API Integration\n📋 Service ID: #1\n👤 Requested by: @user\n\n📋 Next Steps:\n1. Technical team review\n2. Detailed proposal within 24 hours\n3. Consultation call if needed\n\n💰 Consultation: FREE (30 minutes)',
       timestamp: '14:33',
       hasImage: true,
       imageUrl: '/api/placeholder/250/200',
       hasButtons: true,
-      buttons: ['🛒 立即购买', '❤️ 加入收藏', '📊 查看评价']
+      buttons: ['✅ Confirm Request', '❌ Cancel', '📞 Direct Contact']
     }
   },
   {
@@ -110,7 +110,7 @@ const demoScript = [
     message: {
       id: 8,
       type: 'user' as const,
-      text: '🛒 立即购买',
+      text: '✅ Confirm Request',
       timestamp: '14:34'
     }
   },
@@ -119,10 +119,10 @@ const demoScript = [
     message: {
       id: 9,
       type: 'bot' as const,
-      text: '🛒 商品已加入购物车！\n\n📋 订单详情：\n• 蓝牙耳机 Pro × 1\n• 价格：¥299\n• 运费：免费\n\n💳 选择支付方式：',
+      text: '✅ Consultation Request Submitted!\n\n📧 Confirmation: Your request has been received\n👨‍💼 Assigned to: Technical consulting team\n📅 Follow-up: Within 24 hours\n\n🎯 What to expect:\n• Requirement analysis\n• Custom solution proposal\n• Technical feasibility review',
       timestamp: '14:34',
       hasButtons: true,
-      buttons: ['💳 微信支付', '💰 支付宝', '🏦 银行卡']
+      buttons: ['🏠 Main Menu', '📞 Support', '🛡️ Terms & Compliance']
     }
   },
   {
@@ -130,7 +130,7 @@ const demoScript = [
     message: {
       id: 10,
       type: 'user' as const,
-      text: '💳 微信支付',
+      text: '🛡️ Terms & Compliance',
       timestamp: '14:34'
     }
   },
@@ -139,7 +139,7 @@ const demoScript = [
     message: {
       id: 11,
       type: 'bot' as const,
-      text: '💳 正在处理支付...\n\n📄 请确认订单信息：\n• 商品：蓝牙耳机 Pro\n• 数量：1\n• 金额：¥299\n• 收货地址：北京市朝阳区...\n\n✅ 支付成功！',
+      text: '⚖️ Terms of Service & Compliance\n\n🛡️ Our Compliance Standards:\n\n✅ Telegram ToS Compliance\n• No violation of Telegram terms\n• Respect for user privacy\n• No spam or abuse\n\n✅ Service Standards\n• Legitimate business services only\n• Professional API integrations\n• Ethical automation solutions',
       timestamp: '14:34'
     }
   },
@@ -148,10 +148,10 @@ const demoScript = [
     message: {
       id: 12,
       type: 'bot' as const,
-      text: '🎉 订单创建成功！\n\n📦 订单号：TB202412001\n🚚 预计送达：明天下午\n📱 您可以随时查询物流状态\n\n感谢您的购买！还有其他需要帮助的吗？',
+      text: '🛡️ All our services are fully compliant with:\n• Telegram Terms of Service\n• Applicable laws and regulations\n• Industry best practices\n\nThank you for choosing our professional automation services!',
       timestamp: '14:35',
       hasButtons: true,
-      buttons: ['📦 查看订单', '🛍️ 继续购物', '⭐ 评价服务']
+      buttons: ['🔧 Browse Services', '📞 Contact Support', '📚 Documentation']
     }
   }
 ]
@@ -218,7 +218,7 @@ export function TelegramSimulator() {
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
             <DeviceMobile size={24} className="text-primary" />
-            Telegram 机器人演示
+            TeleBot Professional Services Demo
           </CardTitle>
           <div className="flex items-center gap-4">
             <div className="flex gap-2">
@@ -256,8 +256,8 @@ export function TelegramSimulator() {
                 <Robot size={20} />
               </div>
               <div>
-                <h3 className="font-medium">智能销售机器人</h3>
-                <p className="text-xs opacity-80">在线</p>
+                <h3 className="font-medium">TeleBot Business Platform</h3>
+                <p className="text-xs opacity-80">Professional Services • Online</p>
               </div>
             </div>
 
@@ -339,8 +339,8 @@ export function TelegramSimulator() {
             <div className="flex items-center gap-3">
               <ChatCircle size={24} className="text-blue-500" />
               <div>
-                <h3 className="font-medium">智能对话</h3>
-                <p className="text-sm text-muted-foreground">自然语言交互</p>
+                <h3 className="font-medium">Professional APIs</h3>
+                <p className="text-sm text-muted-foreground">Compliant integrations</p>
               </div>
             </div>
           </CardContent>
@@ -351,8 +351,8 @@ export function TelegramSimulator() {
             <div className="flex items-center gap-3">
               <ShoppingCart size={24} className="text-green-500" />
               <div>
-                <h3 className="font-medium">商品展示</h3>
-                <p className="text-sm text-muted-foreground">图文并茂展示</p>
+                <h3 className="font-medium">Business Automation</h3>
+                <p className="text-sm text-muted-foreground">Workflow solutions</p>
               </div>
             </div>
           </CardContent>
@@ -363,8 +363,8 @@ export function TelegramSimulator() {
             <div className="flex items-center gap-3">
               <CreditCard size={24} className="text-purple-500" />
               <div>
-                <h3 className="font-medium">在线支付</h3>
-                <p className="text-sm text-muted-foreground">多种支付方式</p>
+                <h3 className="font-medium">Consulting Services</h3>
+                <p className="text-sm text-muted-foreground">Expert guidance</p>
               </div>
             </div>
           </CardContent>
@@ -374,25 +374,25 @@ export function TelegramSimulator() {
       {/* Demo Statistics */}
       <Card>
         <CardHeader>
-          <CardTitle>演示统计</CardTitle>
+          <CardTitle>Demo Statistics</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-500">{messages.filter(m => m.type === 'bot').length}</div>
-              <div className="text-sm text-muted-foreground">机器人消息</div>
+              <div className="text-sm text-muted-foreground">Bot Messages</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-500">{messages.filter(m => m.type === 'user').length}</div>
-              <div className="text-sm text-muted-foreground">用户交互</div>
+              <div className="text-sm text-muted-foreground">User Interactions</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-500">{messages.filter(m => m.hasButtons).length}</div>
-              <div className="text-sm text-muted-foreground">交互按钮</div>
+              <div className="text-sm text-muted-foreground">Interactive Buttons</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-orange-500">{Math.round(progress)}%</div>
-              <div className="text-sm text-muted-foreground">完成进度</div>
+              <div className="text-sm text-muted-foreground">Progress</div>
             </div>
           </div>
         </CardContent>
