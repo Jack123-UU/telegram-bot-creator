@@ -1,0 +1,205 @@
+# Docker Compose for Production TeleBot Deployment
+# Uses real bot token: 8424135673:AAE-QYrIeZ5kgI3VRu1C5gd23CYnQsmjUmk
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: telebot-postgres
+    environment:
+      POSTGRES_DB: telebot
+      POSTGRES_USER: telebot_user
+      POSTGRES_PASSWORD: telebot_secure_password_2024
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U telebot_user -d telebot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - telebot-network
+
+  # Redis Cache & Queue
+  redis:
+    image: redis:7-alpine
+    container_name: telebot-redis
+    command: redis-server --appendonly yes --requirepass redis_secure_password_2024
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "redis_secure_password_2024", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - telebot-network
+
+  # FastAPI Backend
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: telebot-api
+    environment:
+      - DATABASE_URL=postgresql://telebot_user:telebot_secure_password_2024@postgres:5432/telebot
+      - REDIS_URL=redis://:redis_secure_password_2024@redis:6379/0
+      - BOT_TOKEN=8424135673:AAE-QYrIeZ5kgI3VRu1C5gd23CYnQsmjUmk
+      - TRON_WALLET_ADDRESS=TYs8kpCAh8Qk1G2fJhS8KrB6WQG6vSxD9K
+      - TRON_PRIVATE_KEY=a1b2c3d4e5f6789abcdef1234567890abcdef1234567890abcdef1234567890ab
+      - API_SECRET_KEY=super_secure_api_key_for_production_2024
+      - ENVIRONMENT=production
+      - WEBHOOK_URL=https://your-domain.com/webhook
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+      - file_storage:/app/storage
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - telebot-network
+
+  # Telegram Bot Service
+  bot:
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    container_name: telebot-bot
+    environment:
+      - BOT_TOKEN=8424135673:AAE-QYrIeZ5kgI3VRu1C5gd23CYnQsmjUmk
+      - API_BASE_URL=http://api:8000
+      - REDIS_URL=redis://:redis_secure_password_2024@redis:6379/1
+      - WEBHOOK_URL=https://your-domain.com/webhook
+      - ENVIRONMENT=production
+    depends_on:
+      - api
+      - redis
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - telebot-network
+
+  # Payment Listener Service
+  payment-listener:
+    build:
+      context: ./payment-listener
+      dockerfile: Dockerfile
+    container_name: telebot-payment-listener
+    environment:
+      - TRON_NODE_URL=https://api.trongrid.io
+      - TRON_WALLET_ADDRESS=TYs8kpCAh8Qk1G2fJhS8KrB6WQG6vSxD9K
+      - API_BASE_URL=http://api:8000
+      - REDIS_URL=redis://:redis_secure_password_2024@redis:6379/2
+      - CHECK_INTERVAL=10
+      - ENVIRONMENT=production
+    depends_on:
+      - api
+      - redis
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - telebot-network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: telebot-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+      - ./logs:/var/log/nginx
+    depends_on:
+      - api
+      - bot
+    restart: unless-stopped
+    networks:
+      - telebot-network
+
+  # Background Task Worker
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.worker
+    container_name: telebot-worker
+    environment:
+      - DATABASE_URL=postgresql://telebot_user:telebot_secure_password_2024@postgres:5432/telebot
+      - REDIS_URL=redis://:redis_secure_password_2024@redis:6379/3
+      - TRON_WALLET_ADDRESS=TYs8kpCAh8Qk1G2fJhS8KrB6WQG6vSxD9K
+      - ENVIRONMENT=production
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./logs:/app/logs
+      - file_storage:/app/storage
+    restart: unless-stopped
+    networks:
+      - telebot-network
+
+  # Monitoring with Prometheus
+  prometheus:
+    image: prom/prometheus
+    container_name: telebot-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    restart: unless-stopped
+    networks:
+      - telebot-network
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana
+    container_name: telebot-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin_secure_password_2024
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana:/etc/grafana/provisioning
+    restart: unless-stopped
+    networks:
+      - telebot-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  file_storage:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  telebot-network:
+    driver: bridge
