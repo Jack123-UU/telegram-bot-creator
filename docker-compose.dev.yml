@@ -1,135 +1,109 @@
+# Development Docker Compose with Test Bot Token
+# For local testing and development
+
 version: '3.8'
 
 services:
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
+    container_name: telebot-postgres-dev
     environment:
-      POSTGRES_DB: telebot_sales
-      POSTGRES_USER: telebot
-      POSTGRES_PASSWORD: dev_password_123
+      POSTGRES_DB: telebot_dev
+      POSTGRES_USER: telebot_dev
+      POSTGRES_PASSWORD: dev_password
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U telebot"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - postgres_dev_data:/var/lib/postgresql/data
+    restart: unless-stopped
 
-  # Redis for caching and queues
+  # Redis Cache
   redis:
     image: redis:7-alpine
+    container_name: telebot-redis-dev
     ports:
-      - "6379:6379"
-    command: redis-server --appendonly yes
+      - "6380:6379"
     volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - redis_dev_data:/data
+    restart: unless-stopped
 
-  # Vault for secrets management (dev mode)
-  vault:
-    image: vault:1.13
-    cap_add:
-      - IPC_LOCK
-    environment:
-      VAULT_DEV_ROOT_TOKEN_ID: dev-root-token
-      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
-    ports:
-      - "8200:8200"
-    command: vault server -dev
-
-  # FastAPI Backend
-  backend:
+  # FastAPI Backend (Development)
+  api-dev:
     build:
       context: ./backend
-      dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
+      dockerfile: Dockerfile.dev
+    container_name: telebot-api-dev
     environment:
-      - DATABASE_URL=postgresql://telebot:dev_password_123@postgres:5432/telebot_sales
+      - DATABASE_URL=postgresql://telebot_dev:dev_password@postgres:5432/telebot_dev
       - REDIS_URL=redis://redis:6379/0
-      - VAULT_ADDR=http://vault:8200
-      - VAULT_TOKEN=dev-root-token
-      - BOT_TOKEN=${BOT_TOKEN:-dev-bot-token}
-      - TRON_PRIVATE_KEY=${TRON_PRIVATE_KEY:-dev-private-key}
-      - PAYMENT_ADDRESS=${PAYMENT_ADDRESS:-TDev123456789012345678901234567890}
+      - BOT_TOKEN=8424135673:AAE-QYrIeZ5kgI3VRu1C5gd23CYnQsmjUmk
+      - TRON_WALLET_ADDRESS=TTestAddress123456789abcdefghijk  # Test address
       - ENVIRONMENT=development
+      - DEBUG=true
+    ports:
+      - "8001:8000"
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      vault:
-        condition: service_started
+      - postgres
+      - redis
     volumes:
       - ./backend:/app
-      - uploaded_files:/app/uploads
+      - ./logs:/app/logs
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     restart: unless-stopped
 
-  # Telegram Bot Service
-  bot:
+  # Telegram Bot (Development)
+  bot-dev:
     build:
       context: ./bot
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
+    container_name: telebot-bot-dev
     environment:
-      - API_BASE_URL=http://backend:8000
-      - BOT_TOKEN=${BOT_TOKEN:-dev-bot-token}
-      - VAULT_ADDR=http://vault:8200
-      - VAULT_TOKEN=dev-root-token
+      - BOT_TOKEN=8424135673:AAE-QYrIeZ5kgI3VRu1C5gd23CYnQsmjUmk
+      - API_BASE_URL=http://api-dev:8000
+      - REDIS_URL=redis://redis:6379/1
       - ENVIRONMENT=development
+      - DEBUG=true
     depends_on:
-      - backend
-      - vault
+      - api-dev
+      - redis
     volumes:
       - ./bot:/app
+      - ./logs:/app/logs
     restart: unless-stopped
 
-  # TRON Payment Monitor
-  payment-monitor:
-    build:
-      context: ./payment-monitor
-      dockerfile: Dockerfile
-    environment:
-      - API_BASE_URL=http://backend:8000
-      - REDIS_URL=redis://redis:6379/0
-      - VAULT_ADDR=http://vault:8200
-      - VAULT_TOKEN=dev-root-token
-      - TRON_NODE_URL=${TRON_NODE_URL:-https://api.trongrid.io}
-      - PAYMENT_ADDRESS=${PAYMENT_ADDRESS:-TDev123456789012345678901234567890}
-      - ENVIRONMENT=development
-    depends_on:
-      - backend
-      - redis
-      - vault
-    restart: unless-stopped
-
-  # MinIO for file storage (S3-compatible)
-  minio:
-    image: minio/minio:latest
+  # Nginx for Development
+  nginx-dev:
+    image: nginx:alpine
+    container_name: telebot-nginx-dev
     ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin123
-    command: server /data --console-address ":9001"
+      - "8080:80"
     volumes:
-      - minio_data:/data
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
+      - ./nginx/nginx-dev.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - api-dev
+    restart: unless-stopped
+
+  # Adminer for Database Management
+  adminer:
+    image: adminer
+    container_name: telebot-adminer
+    ports:
+      - "8090:8080"
+    restart: unless-stopped
+
+  # Redis Commander for Redis Management
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: telebot-redis-commander
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8091:8081"
+    depends_on:
+      - redis
+    restart: unless-stopped
 
 volumes:
-  postgres_data:
-  redis_data:
-  minio_data:
-  uploaded_files:
+  postgres_dev_data:
+  redis_dev_data:
