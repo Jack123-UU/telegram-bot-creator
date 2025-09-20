@@ -1,0 +1,104 @@
+# TeleBot Platform - 生产环境安全配置
+# Production Security Configuration for TeleBot Sales Platform
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: telebot-security-config
+  namespace: telebot-platform
+data:
+  # Security Headers Configuration
+  security.yaml: |
+    security:
+      headers:
+        # Force HTTPS
+        strict_transport_security: "max-age=31536000; includeSubDomains; preload"
+        # Prevent MIME type sniffing
+        x_content_type_options: "nosniff"
+        # XSS Protection
+        x_xss_protection: "1; mode=block"
+        # Frame protection
+        x_frame_options: "DENY"
+        # Content Security Policy
+        content_security_policy: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+        # Referrer Policy
+        referrer_policy: "strict-origin-when-cross-origin"
+        
+      # CORS Configuration
+      cors:
+        allowed_origins:
+          - "https://telebot.yourdomain.com"
+          - "https://admin.yourdomain.com"
+        allowed_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+        allowed_headers: ["*"]
+        allow_credentials: true
+        max_age: 86400
+        
+      # Rate Limiting
+      rate_limiting:
+        default: "100/minute"
+        authentication: "5/minute"
+        payment: "10/minute"
+        api_upload: "3/minute"
+        
+      # Authentication
+      authentication:
+        jwt:
+          algorithm: "HS256"
+          access_token_expire: 900  # 15 minutes
+          refresh_token_expire: 604800  # 7 days
+        mfa:
+          enabled: true
+          totp_issuer: "TeleBot Platform"
+          backup_codes: 10
+          
+      # API Security
+      api:
+        require_auth: true
+        internal_token_required: true
+        signature_validation: true
+        timestamp_tolerance: 300  # 5 minutes
+        
+      # File Upload Security
+      file_upload:
+        max_size: "100MB"
+        allowed_extensions:
+          - ".zip"
+          - ".csv"
+          - ".xlsx"
+          - ".session"
+          - ".tdata"
+        scan_for_malware: true
+        encrypt_at_rest: true
+        
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vault-auth-secret
+  namespace: telebot-platform
+type: Opaque
+data:
+  # These are placeholder values - use Sealed Secrets or External Secrets in production
+  vault-role-id: "{{ VAULT_ROLE_ID | b64encode }}"
+  vault-secret-id: "{{ VAULT_SECRET_ID | b64encode }}"
+  
+---
+apiVersion: external-secrets.io/v1beta1
+kind: SecretStore
+metadata:
+  name: vault-secret-store
+  namespace: telebot-platform
+spec:
+  provider:
+    vault:
+      server: "{{ VAULT_ADDR }}"
+      path: "secret"
+      version: "v2"
+      auth:
+        appRole:
+          path: "approle"
+          roleId: "{{ VAULT_ROLE_ID }}"
+          secretRef:
+            name: "vault-auth-secret"
+            key: "vault-secret-id"

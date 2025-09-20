@@ -11,9 +11,10 @@ import { DeploymentCenter } from '@/components/DeploymentCenter'
 import { SecurityCenter } from '@/components/SecurityCenter'
 import { BackendIntegration } from '@/components/BackendIntegration'
 import { TelegramSimulator } from '@/components/TelegramSimulator'
+import { ProductionSecurity } from '@/components/ProductionSecurity'
 import { cn } from '@/lib/utils'
 
-export type NavigationItem = 'dashboard' | 'bots' | 'products' | 'payments' | 'agents' | 'deploy' | 'security' | 'backend' | 'demo'
+export type NavigationItem = 'dashboard' | 'bots' | 'products' | 'payments' | 'agents' | 'deploy' | 'security' | 'backend' | 'demo' | 'production-security'
 
 function App() {
   const [currentView, setCurrentView] = useKV<NavigationItem>('current-view', 'demo')
@@ -29,6 +30,7 @@ function App() {
     { id: 'backend' as const, label: 'Backend', icon: Lightning },
     { id: 'deploy' as const, label: 'Deploy', icon: CloudArrowUp },
     { id: 'security' as const, label: 'Security', icon: Shield },
+    { id: 'production-security' as const, label: 'Production Security', icon: Shield },
   ]
 
   const renderCurrentView = () => {
@@ -51,6 +53,8 @@ function App() {
         return <DeploymentCenter />
       case 'security':
         return <SecurityCenter />
+      case 'production-security':
+        return <ProductionSecurity />
       default:
         return <Dashboard onNavigate={setCurrentView} />
     }
