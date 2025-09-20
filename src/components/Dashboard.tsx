@@ -11,9 +11,15 @@ import {
   Robot,
   Warning,
   CheckCircle,
-  Clock
+  Clock,
+  DeviceMobile
 } from '@phosphor-icons/react'
 import { useKV } from '@github/spark/hooks'
+import { NavigationItem } from '@/App'
+
+interface DashboardProps {
+  onNavigate?: (view: NavigationItem) => void
+}
 
 interface DashboardStats {
   totalOrders: number
@@ -24,7 +30,7 @@ interface DashboardStats {
   successfulPayments: number
 }
 
-export function Dashboard() {
+export function Dashboard({ onNavigate }: DashboardProps = {}) {
   const [stats] = useKV<DashboardStats>('dashboard-stats', {
     totalOrders: 1247,
     totalRevenue: 45680.50,
@@ -141,6 +147,14 @@ export function Dashboard() {
             <CardDescription>Manage your platform efficiently</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
+            <Button 
+              className="w-full justify-start" 
+              variant="default"
+              onClick={() => onNavigate?.('demo')}
+            >
+              <DeviceMobile className="mr-2 h-4 w-4" />
+              🎬 查看Telegram演示
+            </Button>
             <Button className="w-full justify-start" variant="outline">
               <Package className="mr-2 h-4 w-4" />
               Upload New Products

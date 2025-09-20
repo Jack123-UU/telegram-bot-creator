@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Button } from '@/components/ui/button'
-import { Robot, ChartBar, Users, CloudArrowUp, List, Package, Wallet, Shield, Lightning } from '@phosphor-icons/react'
+import { Robot, ChartBar, Users, CloudArrowUp, List, Package, Wallet, Shield, Lightning, DeviceMobile } from '@phosphor-icons/react'
 import { Dashboard } from '@/components/Dashboard'
 import { BotManager } from '@/components/BotManager'
 import { ProductManager } from '@/components/ProductManager'
@@ -10,16 +10,18 @@ import { AgentManager } from '@/components/AgentManager'
 import { DeploymentCenter } from '@/components/DeploymentCenter'
 import { SecurityCenter } from '@/components/SecurityCenter'
 import { BackendIntegration } from '@/components/BackendIntegration'
+import { TelegramSimulator } from '@/components/TelegramSimulator'
 import { cn } from '@/lib/utils'
 
-export type NavigationItem = 'dashboard' | 'bots' | 'products' | 'payments' | 'agents' | 'deploy' | 'security' | 'backend'
+export type NavigationItem = 'dashboard' | 'bots' | 'products' | 'payments' | 'agents' | 'deploy' | 'security' | 'backend' | 'demo'
 
 function App() {
-  const [currentView, setCurrentView] = useKV<NavigationItem>('current-view', 'dashboard')
+  const [currentView, setCurrentView] = useKV<NavigationItem>('current-view', 'demo')
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const navigationItems = [
     { id: 'dashboard' as const, label: 'Dashboard', icon: ChartBar },
+    { id: 'demo' as const, label: 'Telegram演示', icon: DeviceMobile },
     { id: 'bots' as const, label: 'Bot Manager', icon: Robot },
     { id: 'products' as const, label: 'Products', icon: Package },
     { id: 'payments' as const, label: 'Payments', icon: Wallet },
@@ -32,7 +34,9 @@ function App() {
   const renderCurrentView = () => {
     switch (currentView) {
       case 'dashboard':
-        return <Dashboard />
+        return <Dashboard onNavigate={setCurrentView} />
+      case 'demo':
+        return <TelegramSimulator />
       case 'bots':
         return <BotManager />
       case 'products':
@@ -48,7 +52,7 @@ function App() {
       case 'security':
         return <SecurityCenter />
       default:
-        return <Dashboard />
+        return <Dashboard onNavigate={setCurrentView} />
     }
   }
 
