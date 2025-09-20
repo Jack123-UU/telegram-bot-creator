@@ -1,0 +1,66 @@
+#!/bin/bash
+
+# 简化版GitHub打包脚本
+# 手动运行这些命令来打包项目
+
+echo "📋 TeleBot销售平台GitHub打包清单"
+echo "================================="
+echo ""
+
+echo "1️⃣ 创建打包目录："
+echo "   mkdir zh-telebot-package"
+echo ""
+
+echo "2️⃣ 复制核心文件："
+echo "   # 前端代码"
+echo "   cp -r src/ zh-telebot-package/"
+echo "   cp index.html package.json tsconfig.json tailwind.config.js zh-telebot-package/"
+echo ""
+echo "   # 后端代码"  
+echo "   cp -r backend/ zh-telebot-package/"
+echo ""
+echo "   # Bot代码"
+echo "   cp -r bot/ zh-telebot-package/"
+echo ""
+echo "   # 部署文件"
+echo "   cp -r deploy/ config/ scripts/ zh-telebot-package/"
+echo "   cp docker-compose.*.yml zh-telebot-package/"
+echo ""
+
+echo "3️⃣ 复制配置模板："
+echo "   cp .env.example .env.secure.example zh-telebot-package/"
+echo ""
+
+echo "4️⃣ 复制文档："
+echo "   cp *.md zh-telebot-package/"
+echo ""
+
+echo "5️⃣ 创建安全的.gitignore："
+echo "   创建 zh-telebot-package/.gitignore 文件"
+echo ""
+
+echo "6️⃣ Git操作："
+echo "   cd zh-telebot-package"
+echo "   git init"
+echo "   git add ."
+echo "   git commit -m 'Initial commit: TeleBot销售平台'"
+echo "   git remote add origin https://github.com/yourusername/zh.git"
+echo "   git push -u origin main"
+echo ""
+
+echo "✅ 完整项目已准备好上传到GitHub！"
+echo ""
+echo "📁 包含的主要功能："
+echo "   ✅ Telegram Bot交互系统"
+echo "   ✅ 支付处理(TRON/USDT)" 
+echo "   ✅ 商品和库存管理"
+echo "   ✅ 分销商管理"
+echo "   ✅ Docker部署配置"
+echo "   ✅ 完整文档和测试"
+echo ""
+echo "🔒 安全检查："
+echo "   ✅ 已移除真实Token和密钥"
+echo "   ✅ 仅包含配置模板"
+echo "   ✅ 包含安全部署指南"
+echo ""
+echo "📖 详细说明请查看: GITHUB_UPLOAD_GUIDE.md"
