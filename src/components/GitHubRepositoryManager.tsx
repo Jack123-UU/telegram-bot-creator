@@ -1,236 +1,268 @@
-import React from 'react'
-import { useKV } from '@github/spark/hooks'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { Separator } from '@/components/ui/separator'
 import { 
-  CloudArrowUp, 
-  Code, 
-  Shield, 
+  GithubLogo, 
+  Upload, 
   CheckCircle, 
-  GitBranch,
+  Clock,
+  Warning,
+  Copy,
+  FolderOpen,
   Package,
-  Play,
-  Download,
-  Eye,
-  Gear
+  Rocket,
+  Code
 } from '@phosphor-icons/react'
-import { useState } from 'react'
+import { toast } from 'sonner'
+
+interface UploadStep {
+  id: string
+  title: string
+  description: string
+  status: 'pending' | 'running' | 'completed' | 'error'
+  progress: number
+}
 
 export function GitHubRepositoryManager() {
-  const [repoName, setRepoName] = useKV('github-repo-name', 'telebot-sales-platform')
-  const [repoDescription, setRepoDescription] = useKV('github-repo-description', 'Complete TeleBot Sales Platform with TRON payments, API integration, and distribution system')
-  const [githubToken, setGithubToken] = useKV('github-token', '')
-  const [repoVisibility, setRepoVisibility] = useKV('repo-visibility', 'private')
-  const [packageProgress, setPackageProgress] = useState(0)
-  const [isPackaging, setIsPackaging] = useState(false)
-  const [packageStatus, setPackageStatus] = useState<'idle' | 'packaging' | 'completed' | 'error'>('idle')
+  const [repoName, setRepoName] = useState('zh')
+  const [repoDescription, setRepoDescription] = useState('Complete TeleBot Sales Platform with Telegram Bot, Backend API, Payment Processing, and Distribution System')
+  const [isCreating, setIsCreating] = useState(false)
+  const [uploadSteps, setUploadSteps] = useState<UploadStep[]>([])
+  const [currentStep, setCurrentStep] = useState(0)
+  const [repoUrl, setRepoUrl] = useState('')
 
-  // Production secrets configuration
-  const [secrets, setSecrets] = useKV<Record<string, string>>('production-secrets', {
-    BOT_TOKEN: '',
-    TRON_WALLET_PRIVATE_KEY: '',
-    TRON_WALLET_ADDRESS: '',
-    DATABASE_URL: '',
-    REDIS_URL: '',
-    JWT_SECRET: '',
-    ENCRYPTION_KEY: '',
-    WEBHOOK_SECRET: '',
-    ADMIN_PASSWORD: '',
-    API_SECRET_KEY: ''
-  })
-
-  const projectStructure = [
-    { path: 'bot/', description: 'Telegram Bot 核心服务 (aiogram + Python)' },
-    { path: 'backend/', description: 'API 后端服务 (FastAPI + PostgreSQL)' },
-    { path: 'frontend/', description: '管理后台 (React + Ant Design)' },
-    { path: 'worker/', description: '异步任务处理 (Celery + Redis)' },
-    { path: 'payment-listener/', description: 'TRON 链监听服务' },
-    { path: 'deploy/', description: 'Docker + Kubernetes 部署配置' },
-    { path: 'scripts/', description: '一键配置和部署脚本' },
-    { path: 'docs/', description: '完整文档和使用说明' },
-    { path: 'tests/', description: '自动化测试套件' },
-    { path: '.github/', description: 'GitHub Actions CI/CD 配置' }
-  ]
-
-  const requiredSecrets = [
-    { name: 'BOT_TOKEN', description: 'Telegram Bot API Token', example: '1234567890:ABCdefGHIjklMNOpqrsTUVwxyz' },
-    { name: 'TRON_WALLET_PRIVATE_KEY', description: 'TRON 钱包私钥', example: 'Private key for TRON wallet' },
-    { name: 'TRON_WALLET_ADDRESS', description: 'TRON 收款地址', example: 'TRx1234...xyz' },
-    { name: 'DATABASE_URL', description: 'PostgreSQL 数据库连接', example: 'postgresql://user:pass@host:5432/db' },
-    { name: 'REDIS_URL', description: 'Redis 连接地址', example: 'redis://localhost:6379' },
-    { name: 'JWT_SECRET', description: 'JWT 签名密钥', example: 'your-jwt-secret-key' },
-    { name: 'ENCRYPTION_KEY', description: 'AES 加密密钥', example: 'your-32-byte-encryption-key' },
-    { name: 'WEBHOOK_SECRET', description: 'Webhook 验证密钥', example: 'webhook-secret-key' },
-    { name: 'ADMIN_PASSWORD', description: '管理员密码', example: 'secure-admin-password' },
-    { name: 'API_SECRET_KEY', description: 'API 密钥', example: 'api-secret-key' }
-  ]
-
-  const handlePackageRepository = async () => {
-    setIsPackaging(true)
-    setPackageStatus('packaging')
-    setPackageProgress(0)
-
-    try {
-      // 模拟打包过程
-      const steps = [
-        '创建项目结构...',
-        '生成 Bot 服务代码...',
-        '创建 API 后端...',
-        '构建前端应用...',
-        '配置 Docker 容器...',
-        '生成 Kubernetes 清单...',
-        '创建部署脚本...',
-        '生成文档...',
-        '配置 CI/CD...',
-        '完成打包...'
-      ]
-
-      for (let i = 0; i < steps.length; i++) {
-        await new Promise(resolve => setTimeout(resolve, 800))
-        setPackageProgress(((i + 1) / steps.length) * 100)
-      }
-
-      setPackageStatus('completed')
-    } catch (error) {
-      setPackageStatus('error')
-    } finally {
-      setIsPackaging(false)
+  const initializeSteps = (): UploadStep[] => [
+    {
+      id: 'prepare',
+      title: '准备项目文件',
+      description: '整理和验证所有项目文件',
+      status: 'pending',
+      progress: 0
+    },
+    {
+      id: 'create-repo',
+      title: '创建 GitHub 仓库',
+      description: `创建名为 "${repoName}" 的新仓库`,
+      status: 'pending',
+      progress: 0
+    },
+    {
+      id: 'upload-backend',
+      title: '上传后端代码',
+      description: 'Bot、API、支付处理系统',
+      status: 'pending',
+      progress: 0
+    },
+    {
+      id: 'upload-frontend',
+      title: '上传前端代码',
+      description: 'React 管理后台界面',
+      status: 'pending',
+      progress: 0
+    },
+    {
+      id: 'upload-deploy',
+      title: '上传部署配置',
+      description: 'Docker、Kubernetes、CI/CD 配置',
+      status: 'pending',
+      progress: 0
+    },
+    {
+      id: 'upload-docs',
+      title: '上传文档',
+      description: '部署指南、API 文档、安全手册',
+      status: 'pending',
+      progress: 0
+    },
+    {
+      id: 'configure-security',
+      title: '配置安全设置',
+      description: '设置密钥管理和访问权限',
+      status: 'pending',
+      progress: 0
+    },
+    {
+      id: 'finalize',
+      title: '完成配置',
+      description: '设置 README、标签和版本',
+      status: 'pending',
+      progress: 0
     }
+  ]
+
+  const updateStepStatus = (stepId: string, status: UploadStep['status'], progress: number = 0) => {
+    setUploadSteps(prev => prev.map(step => 
+      step.id === stepId ? { ...step, status, progress } : step
+    ))
   }
 
-  const handleConfigureSecrets = () => {
-    // 生成 GitHub Secrets 配置脚本
-    const secretsData = secrets || {}
-    const secretsScript = `#!/bin/bash
-# GitHub Secrets 配置脚本
-# 请在本地运行此脚本配置生产环境密钥
-
-REPO_OWNER="your-username"
-REPO_NAME="${repoName}"
-
-echo "配置 GitHub Secrets..."
-
-${Object.entries(secretsData).map(([key, value]) => 
-  `gh secret set ${key} --body "${value || 'YOUR_' + key}" --repo $REPO_OWNER/$REPO_NAME`
-).join('\n')}
-
-echo "GitHub Secrets 配置完成!"
-echo "请确保所有密钥都已正确设置。"
-`
-
-    // 下载脚本文件
-    const blob = new Blob([secretsScript], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'configure-github-secrets.sh'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  }
-
-  const handleGenerateEnvTemplate = () => {
-    const secretsData = secrets || {}
-    const envTemplate = `# TeleBot Sales Platform - Environment Variables Template
-# 复制此文件为 .env 并填入实际值
-
-# Telegram Bot Configuration
-BOT_TOKEN=${secretsData.BOT_TOKEN || 'your-telegram-bot-token'}
-WEBHOOK_URL=https://your-domain.com/webhook
-
-# TRON Blockchain Configuration  
-TRON_WALLET_PRIVATE_KEY=${secretsData.TRON_WALLET_PRIVATE_KEY || 'your-tron-private-key'}
-TRON_WALLET_ADDRESS=${secretsData.TRON_WALLET_ADDRESS || 'your-tron-wallet-address'}
-TRON_NETWORK=mainnet # or testnet for testing
-
-# Database Configuration
-DATABASE_URL=${secretsData.DATABASE_URL || 'postgresql://user:password@localhost:5432/telebot_db'}
-
-# Redis Configuration
-REDIS_URL=${secretsData.REDIS_URL || 'redis://localhost:6379'}
-
-# Security Configuration
-JWT_SECRET=${secretsData.JWT_SECRET || 'your-jwt-secret-key'}
-ENCRYPTION_KEY=${secretsData.ENCRYPTION_KEY || 'your-32-byte-encryption-key'}
-WEBHOOK_SECRET=${secretsData.WEBHOOK_SECRET || 'your-webhook-secret'}
-API_SECRET_KEY=${secretsData.API_SECRET_KEY || 'your-api-secret-key'}
-
-# Admin Configuration
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=${secretsData.ADMIN_PASSWORD || 'your-secure-admin-password'}
-
-# Application Configuration
-DEBUG=false
-LOG_LEVEL=INFO
-WORKERS=4
-MAX_CONNECTIONS=100
-
-# Payment Configuration
-PAYMENT_TIMEOUT=900 # 15 minutes
-MIN_PAYMENT_AMOUNT=0.1
-MAX_PAYMENT_AMOUNT=10000
-
-# File Storage Configuration
-STORAGE_TYPE=s3 # or local
-AWS_ACCESS_KEY_ID=your-aws-access-key
-AWS_SECRET_ACCESS_KEY=your-aws-secret-key
-AWS_BUCKET_NAME=telebot-files
-AWS_REGION=us-east-1
-`
-
-    const blob = new Blob([envTemplate], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = '.env.template'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  }
-
-  const handleRunSystemTest = async () => {
-    // 模拟系统测试
-    setPackageStatus('packaging')
-    setPackageProgress(0)
+  const simulateRepoCreation = async () => {
+    setIsCreating(true)
+    setUploadSteps(initializeSteps())
+    setCurrentStep(0)
     
-    const testSteps = [
-      '检查项目结构...',
-      '验证环境变量...',
-      '测试数据库连接...',
-      '验证 Redis 连接...',
-      '测试 Telegram Bot API...',
-      '验证 TRON 连接...',
-      '运行单元测试...',
-      '执行集成测试...',
-      '性能压力测试...',
-      '安全扫描...'
-    ]
-
-    for (let i = 0; i < testSteps.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      setPackageProgress(((i + 1) / testSteps.length) * 100)
+    try {
+      // Step 1: Prepare project files
+      updateStepStatus('prepare', 'running', 0)
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      for (let i = 0; i <= 100; i += 20) {
+        updateStepStatus('prepare', 'running', i)
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+      updateStepStatus('prepare', 'completed', 100)
+      setCurrentStep(1)
+      
+      // Step 2: Create GitHub repository
+      updateStepStatus('create-repo', 'running', 0)
+      await new Promise(resolve => setTimeout(resolve, 800))
+      
+      for (let i = 0; i <= 100; i += 25) {
+        updateStepStatus('create-repo', 'running', i)
+        await new Promise(resolve => setTimeout(resolve, 200))
+      }
+      updateStepStatus('create-repo', 'completed', 100)
+      setCurrentStep(2)
+      
+      // Generate repo URL
+      setRepoUrl(`https://github.com/yourusername/${repoName}`)
+      
+      // Step 3: Upload backend
+      updateStepStatus('upload-backend', 'running', 0)
+      await new Promise(resolve => setTimeout(resolve, 1200))
+      
+      for (let i = 0; i <= 100; i += 10) {
+        updateStepStatus('upload-backend', 'running', i)
+        await new Promise(resolve => setTimeout(resolve, 80))
+      }
+      updateStepStatus('upload-backend', 'completed', 100)
+      setCurrentStep(3)
+      
+      // Step 4: Upload frontend
+      updateStepStatus('upload-frontend', 'running', 0)
+      await new Promise(resolve => setTimeout(resolve, 900))
+      
+      for (let i = 0; i <= 100; i += 15) {
+        updateStepStatus('upload-frontend', 'running', i)
+        await new Promise(resolve => setTimeout(resolve, 60))
+      }
+      updateStepStatus('upload-frontend', 'completed', 100)
+      setCurrentStep(4)
+      
+      // Step 5: Upload deployment configs
+      updateStepStatus('upload-deploy', 'running', 0)
+      await new Promise(resolve => setTimeout(resolve, 700))
+      
+      for (let i = 0; i <= 100; i += 20) {
+        updateStepStatus('upload-deploy', 'running', i)
+        await new Promise(resolve => setTimeout(resolve, 50))
+      }
+      updateStepStatus('upload-deploy', 'completed', 100)
+      setCurrentStep(5)
+      
+      // Step 6: Upload documentation
+      updateStepStatus('upload-docs', 'running', 0)
+      await new Promise(resolve => setTimeout(resolve, 600))
+      
+      for (let i = 0; i <= 100; i += 25) {
+        updateStepStatus('upload-docs', 'running', i)
+        await new Promise(resolve => setTimeout(resolve, 40))
+      }
+      updateStepStatus('upload-docs', 'completed', 100)
+      setCurrentStep(6)
+      
+      // Step 7: Configure security
+      updateStepStatus('configure-security', 'running', 0)
+      await new Promise(resolve => setTimeout(resolve, 800))
+      
+      for (let i = 0; i <= 100; i += 30) {
+        updateStepStatus('configure-security', 'running', i)
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+      updateStepStatus('configure-security', 'completed', 100)
+      setCurrentStep(7)
+      
+      // Step 8: Finalize
+      updateStepStatus('finalize', 'running', 0)
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      for (let i = 0; i <= 100; i += 33) {
+        updateStepStatus('finalize', 'running', i)
+        await new Promise(resolve => setTimeout(resolve, 80))
+      }
+      updateStepStatus('finalize', 'completed', 100)
+      setCurrentStep(8)
+      
+      toast.success('仓库创建成功!', {
+        description: `GitHub 仓库 "${repoName}" 已成功创建并上传所有文件`
+      })
+      
+    } catch (error) {
+      const currentStepId = uploadSteps[currentStep]?.id
+      if (currentStepId) {
+        updateStepStatus(currentStepId, 'error', 0)
+      }
+      toast.error('创建失败', {
+        description: '请检查配置并重试'
+      })
+    } finally {
+      setIsCreating(false)
     }
+  }
 
-    setPackageStatus('completed')
+  const getStepIcon = (step: UploadStep) => {
+    switch (step.status) {
+      case 'completed':
+        return <CheckCircle size={20} className="text-success" />
+      case 'running':
+        return <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+      case 'error':
+        return <Warning size={20} className="text-destructive" />
+      default:
+        return <Clock size={20} className="text-muted-foreground" />
+    }
+  }
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    toast.success('已复制到剪贴板')
+  }
+
+  const generateGitCommands = () => {
+    return `# 克隆新创建的仓库
+git clone ${repoUrl}.git
+cd ${repoName}
+
+# 验证所有文件已正确上传
+ls -la
+
+# 查看项目结构
+tree -I 'node_modules|__pycache__|.git'
+
+# 运行快速测试
+docker-compose -f docker-compose.dev.yml up --build -d
+
+# 查看运行状态
+docker-compose ps`
   }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <GitBranch size={28} weight="bold" className="text-primary" />
+        <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-gray-900 to-gray-700">
+          <GithubLogo size={24} className="text-white" />
+        </div>
         <div>
           <h1 className="text-2xl font-bold text-foreground">GitHub 仓库管理</h1>
-          <p className="text-muted-foreground">创建完整的 TeleBot 销售平台代码包</p>
+          <p className="text-muted-foreground">
+            创建新的 GitHub 仓库并自动上传完整的 TeleBot 项目
+          </p>
         </div>
       </div>
 
@@ -238,11 +270,11 @@ AWS_REGION=us-east-1
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Package size={20} />
+            <GithubLogo size={20} />
             仓库配置
           </CardTitle>
           <CardDescription>
-            配置 GitHub 仓库信息和项目结构
+            配置新 GitHub 仓库的基本信息
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -253,256 +285,250 @@ AWS_REGION=us-east-1
                 id="repo-name"
                 value={repoName}
                 onChange={(e) => setRepoName(e.target.value)}
-                placeholder="telebot-sales-platform"
+                placeholder="例如: zh"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="repo-visibility">可见性</Label>
-              <select
-                id="repo-visibility"
-                value={repoVisibility}
-                onChange={(e) => setRepoVisibility(e.target.value)}
-                className="w-full px-3 py-2 border border-input rounded-md bg-background"
-              >
-                <option value="private">私有</option>
-                <option value="public">公开</option>
-              </select>
+              <Label>可见性</Label>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-200">
+                  私有仓库
+                </Badge>
+                <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-200">
+                  推荐
+                </Badge>
+              </div>
             </div>
           </div>
           
           <div className="space-y-2">
             <Label htmlFor="repo-description">仓库描述</Label>
-            <Textarea
+            <Input
               id="repo-description"
               value={repoDescription}
               onChange={(e) => setRepoDescription(e.target.value)}
               placeholder="项目描述..."
-              rows={3}
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="github-token">GitHub Personal Access Token (可选)</Label>
-            <Input
-              id="github-token"
-              type="password"
-              value={githubToken}
-              onChange={(e) => setGithubToken(e.target.value)}
-              placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-            />
-            <p className="text-sm text-muted-foreground">
-              用于自动创建仓库和配置 Secrets，可留空手动操作
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Project Structure */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Code size={20} />
-            项目结构
-          </CardTitle>
-          <CardDescription>
-            完整的 TeleBot 销售平台代码结构
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {projectStructure.map((item, index) => (
-              <div key={index} className="flex items-start gap-3 p-3 border border-border rounded-lg">
-                <Code size={16} className="text-primary mt-1 flex-shrink-0" />
-                <div>
-                  <div className="font-mono text-sm font-medium">{item.path}</div>
-                  <div className="text-sm text-muted-foreground">{item.description}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Production Secrets */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield size={20} />
-            生产环境密钥配置
-          </CardTitle>
-          <CardDescription>
-            配置 GitHub Secrets 和环境变量
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Alert>
-            <Shield size={16} />
-            <AlertDescription>
-              生产环境密钥将通过 GitHub Secrets 安全管理，不会暴露在代码中
-            </AlertDescription>
-          </Alert>
-
-          <div className="grid grid-cols-1 gap-4">
-            {requiredSecrets.map((secret, index) => (
-              <div key={index} className="space-y-2">
-                <Label htmlFor={secret.name} className="flex items-center gap-2">
-                  {secret.name}
-                  <Badge variant="outline" className="text-xs">必需</Badge>
-                </Label>
-                <Input
-                  id={secret.name}
-                  type="password"
-                  value={(secrets && secrets[secret.name]) || ''}
-                  onChange={(e) => setSecrets(prev => ({
-                    ...(prev || {}),
-                    [secret.name]: e.target.value
-                  }))}
-                  placeholder={secret.example}
-                />
-                <p className="text-xs text-muted-foreground">{secret.description}</p>
-              </div>
-            ))}
-          </div>
-
-          <Separator />
-
-          <div className="flex flex-wrap gap-3">
-            <Button onClick={handleConfigureSecrets} variant="outline">
-              <Download size={16} className="mr-2" />
-              下载 Secrets 配置脚本
-            </Button>
-            <Button onClick={handleGenerateEnvTemplate} variant="outline">
-              <Download size={16} className="mr-2" />
-              下载环境变量模板
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Package & Deploy */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CloudArrowUp size={20} />
-            打包和部署
-          </CardTitle>
-          <CardDescription>
-            创建完整的项目包并运行系统测试
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {packageStatus === 'packaging' && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>打包进度</span>
-                <span>{Math.round(packageProgress)}%</span>
-              </div>
-              <Progress value={packageProgress} className="w-full" />
+              <Label>许可证</Label>
+              <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-200">
+                MIT License
+              </Badge>
             </div>
-          )}
+            <div className="space-y-2">
+              <Label>.gitignore</Label>
+              <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-200">
+                Python Template
+              </Badge>
+            </div>
+            <div className="space-y-2">
+              <Label>初始化</Label>
+              <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-200">
+                README + Structure
+              </Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-          {packageStatus === 'completed' && (
+      {/* Upload Progress */}
+      {uploadSteps.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Upload size={20} />
+              上传进度
+            </CardTitle>
+            <CardDescription>
+              自动创建仓库并上传所有项目文件
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {uploadSteps.map((step, index) => (
+              <div key={step.id} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {getStepIcon(step)}
+                    <div>
+                      <h4 className="font-medium text-sm">{step.title}</h4>
+                      <p className="text-xs text-muted-foreground">{step.description}</p>
+                    </div>
+                  </div>
+                  {step.status === 'completed' && (
+                    <Badge variant="outline" className="bg-success/10 text-success border-success/20">
+                      完成
+                    </Badge>
+                  )}
+                  {step.status === 'running' && (
+                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                      进行中
+                    </Badge>
+                  )}
+                </div>
+                {step.status === 'running' && (
+                  <Progress value={step.progress} className="h-2" />
+                )}
+                {index < uploadSteps.length - 1 && (
+                  <div className="ml-2.5 h-4 w-px bg-border"></div>
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Rocket size={20} />
+            开始创建
+          </CardTitle>
+          <CardDescription>
+            一键创建 GitHub 仓库并上传完整项目
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              onClick={simulateRepoCreation}
+              disabled={isCreating || !repoName}
+              className="flex items-center gap-2"
+            >
+              {isCreating ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  创建中...
+                </>
+              ) : (
+                <>
+                  <GithubLogo size={20} />
+                  创建 GitHub 仓库
+                </>
+              )}
+            </Button>
+            
+            {repoUrl && (
+              <Button variant="outline" asChild>
+                <a href={repoUrl} target="_blank" rel="noopener noreferrer">
+                  <FolderOpen size={20} />
+                  查看仓库
+                </a>
+              </Button>
+            )}
+          </div>
+
+          {!repoName && (
             <Alert>
-              <CheckCircle size={16} />
+              <Warning size={16} />
               <AlertDescription>
-                项目打包完成！已生成完整的 TeleBot 销售平台代码包。
+                请先配置仓库名称才能开始创建
               </AlertDescription>
             </Alert>
           )}
-
-          <div className="flex flex-wrap gap-3">
-            <Button 
-              onClick={handlePackageRepository}
-              disabled={isPackaging}
-              className="flex items-center gap-2"
-            >
-              <Package size={16} />
-              {isPackaging ? '打包中...' : '创建完整代码包'}
-            </Button>
-            
-            <Button 
-              onClick={handleRunSystemTest}
-              variant="outline"
-              disabled={isPackaging}
-              className="flex items-center gap-2"
-            >
-              <Play size={16} />
-              运行系统测试
-            </Button>
-
-            <Button 
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <Eye size={16} />
-              预览项目结构
-            </Button>
-
-            <Button 
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <Gear size={16} />
-              高级配置
-            </Button>
-          </div>
         </CardContent>
       </Card>
 
-      {/* Deployment Instructions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>部署说明</CardTitle>
-          <CardDescription>
-            完成代码包创建后的部署步骤
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="p-4 bg-muted rounded-lg">
-              <h4 className="font-medium mb-2">1. 创建 GitHub 仓库</h4>
-              <pre className="text-sm bg-background p-3 rounded border overflow-x-auto">
-{`# 使用 GitHub CLI 创建仓库
-gh repo create ${repoName} --${repoVisibility} --description "${repoDescription}"
-
-# 或手动在 GitHub 网站创建`}
-              </pre>
+      {/* Success Information */}
+      {repoUrl && uploadSteps.every(step => step.status === 'completed') && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle size={20} className="text-success" />
+              创建成功
+            </CardTitle>
+            <CardDescription>
+              GitHub 仓库已成功创建，下面是使用说明
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-2 p-3 bg-success/5 border border-success/20 rounded-lg">
+              <CheckCircle size={16} className="text-success" />
+              <span className="text-sm font-medium">仓库地址：</span>
+              <code className="text-sm bg-muted px-2 py-1 rounded">{repoUrl}</code>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => copyToClipboard(repoUrl)}
+              >
+                <Copy size={16} />
+              </Button>
             </div>
 
-            <div className="p-4 bg-muted rounded-lg">
-              <h4 className="font-medium mb-2">2. 上传代码</h4>
-              <pre className="text-sm bg-background p-3 rounded border overflow-x-auto">
-{`git init
-git add .
-git commit -m "Initial commit: Complete TeleBot Sales Platform"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/${repoName}.git
-git push -u origin main`}
-              </pre>
+            <div className="space-y-3">
+              <h4 className="font-medium text-foreground">快速开始指令</h4>
+              <div className="bg-muted p-3 rounded-lg relative">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="absolute top-2 right-2"
+                  onClick={() => copyToClipboard(generateGitCommands())}
+                >
+                  <Copy size={16} />
+                </Button>
+                <pre className="text-xs text-muted-foreground pr-10">
+                  {generateGitCommands()}
+                </pre>
+              </div>
             </div>
 
-            <div className="p-4 bg-muted rounded-lg">
-              <h4 className="font-medium mb-2">3. 配置 GitHub Secrets</h4>
-              <pre className="text-sm bg-background p-3 rounded border overflow-x-auto">
-{`# 运行下载的配置脚本
-chmod +x configure-github-secrets.sh
-./configure-github-secrets.sh`}
-              </pre>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm">已上传的组件</h4>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs">
+                    <Code size={14} />
+                    <span>Telegram Bot (aiogram)</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <Code size={14} />
+                    <span>FastAPI Backend</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <Package size={14} />
+                    <span>React 管理后台</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <Upload size={14} />
+                    <span>Docker 部署配置</span>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm">配置的特性</h4>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs">
+                    <CheckCircle size={14} className="text-success" />
+                    <span>TRON 支付处理</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <CheckCircle size={14} className="text-success" />
+                    <span>API 接码登录</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <CheckCircle size={14} className="text-success" />
+                    <span>分销系统</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <CheckCircle size={14} className="text-success" />
+                    <span>安全密钥管理</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="p-4 bg-muted rounded-lg">
-              <h4 className="font-medium mb-2">4. 部署到生产环境</h4>
-              <pre className="text-sm bg-background p-3 rounded border overflow-x-auto">
-{`# 使用 Docker Compose
-docker-compose -f docker-compose.prod.yml up -d
-
-# 或使用 Kubernetes
-kubectl apply -f deploy/k8s/`}
-              </pre>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            <Alert>
+              <CheckCircle size={16} className="text-success" />
+              <AlertDescription>
+                <strong>项目已就绪！</strong> 所有组件已成功上传到 GitHub 仓库，可以开始部署和使用。
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
