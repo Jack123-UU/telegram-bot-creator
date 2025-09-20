@@ -17,15 +17,17 @@ import { ComprehensiveTesting } from '@/components/ComprehensiveTesting'
 import { ComprehensiveTestResults } from '@/components/ComprehensiveTestResults'
 import { ProductionSecurity } from '@/components/ProductionSecurity'
 import { BotButtonConfig } from '@/components/BotButtonConfig'
+import { ButtonFunctionTesting } from '@/components/ButtonFunctionTesting'
 import { cn } from '@/lib/utils'
 
-export type NavigationItem = 'dashboard' | 'bots' | 'products' | 'payments' | 'agents' | 'deploy' | 'security' | 'backend' | 'demo' | 'real-testing' | 'docker-testing' | 'comprehensive-testing' | 'test-results' | 'production-security' | 'bot-config'
+export type NavigationItem = 'dashboard' | 'bots' | 'products' | 'payments' | 'agents' | 'deploy' | 'security' | 'backend' | 'demo' | 'real-testing' | 'docker-testing' | 'comprehensive-testing' | 'test-results' | 'production-security' | 'bot-config' | 'button-testing'
 
 function App() {
-  const [currentView, setCurrentView] = useKV<NavigationItem>('current-view', 'test-results')
+  const [currentView, setCurrentView] = useKV<NavigationItem>('current-view', 'button-testing')
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const navigationItems = [
+    { id: 'button-testing' as const, label: '按钮功能测试', icon: TestTube },
     { id: 'test-results' as const, label: '全部功能测试结果', icon: TestTube },
     { id: 'bot-config' as const, label: '机器人按钮配置', icon: Gear },
     { id: 'dashboard' as const, label: 'Dashboard', icon: ChartBar },
@@ -45,6 +47,8 @@ function App() {
 
   const renderCurrentView = () => {
     switch (currentView) {
+      case 'button-testing':
+        return <ButtonFunctionTesting />
       case 'test-results':
         return <ComprehensiveTestResults />
       case 'bot-config':
@@ -76,7 +80,7 @@ function App() {
       case 'production-security':
         return <ProductionSecurity />
       default:
-        return <ComprehensiveTestResults />
+        return <ButtonFunctionTesting />
     }
   }
 
