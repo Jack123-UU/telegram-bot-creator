@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  energy-bot:
+    build: .
+    container_name: energy-exchange-bot
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+      - PAYMENT_ADDRESS=${PAYMENT_ADDRESS}
+      - CUSTOMER_SERVICE_ID=${CUSTOMER_SERVICE_ID}
+      - REDIS_URL=redis://redis:6379
+      - BACKEND_API_URL=http://backend:8000
+      - TRON_API_URL=https://api.trongrid.io
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - energy-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: energy-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - energy-network
+    command: redis-server --appendonly yes
+
+  # 可选: Prometheus 监控
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: energy-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - energy-network
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  prometheus_data:
+
+networks:
+  energy-network:
+    driver: bridge
